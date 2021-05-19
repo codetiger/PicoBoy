@@ -30,3 +30,13 @@
 *.exe
 *.out
 *.app
+
+.DS_Store
+
+CMakeCache.txt
+cmake_install.cmake
+CMakeFiles/
+Makefile
+.vscode
+picoboy
+roms/
