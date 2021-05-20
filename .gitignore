@@ -37,6 +37,7 @@ CMakeCache.txt
 cmake_install.cmake
 CMakeFiles/
 Makefile
+build/
 .vscode
 picoboy
 roms/

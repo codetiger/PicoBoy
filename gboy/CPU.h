@@ -49,6 +49,7 @@ private:
     bool instruction_LoadMem2Reg(uint8_t* data);
     bool instruction_LoadReg2Mem(uint8_t* data);
     bool instruction_LoadAIndirect(uint8_t* data);
+    bool instruction_LoadA2Mem(uint8_t* data);
     bool instruction_LoadReg2Reg(uint8_t* data);
 
     bool instruction_JR(uint8_t* data);
@@ -58,6 +59,8 @@ private:
     bool instruction_Rotate(uint8_t* data);
     bool instruction_Return(uint8_t* data);
     
+    bool instruction_Compare(uint8_t* data);
+    bool instruction_LoadAnn(uint8_t* data);
 
 public:
 	uint16_t ProgramCounter;
@@ -255,6 +258,23 @@ CentralProcessingUnit::CentralProcessingUnit(MemoryManagementUnit *mmu) {
     instructionSet.insert(std::make_pair(0xc9, new Instruction("RET", 1, 8, &CentralProcessingUnit::instruction_Return)));
     instructionSet.insert(std::make_pair(0xd0, new Instruction("RET NC", 1, 8, &CentralProcessingUnit::instruction_Return)));
     instructionSet.insert(std::make_pair(0xd8, new Instruction("RET C", 1, 8, &CentralProcessingUnit::instruction_Return)));
+
+    instructionSet.insert(std::make_pair(0xb8, new Instruction("CMP B", 1, 4, &CentralProcessingUnit::instruction_Compare)));
+    instructionSet.insert(std::make_pair(0xb9, new Instruction("CMP C", 1, 4, &CentralProcessingUnit::instruction_Compare)));
+    instructionSet.insert(std::make_pair(0xba, new Instruction("CMP D", 1, 4, &CentralProcessingUnit::instruction_Compare)));
+    instructionSet.insert(std::make_pair(0xbb, new Instruction("CMP E", 1, 4, &CentralProcessingUnit::instruction_Compare)));
+    instructionSet.insert(std::make_pair(0xbc, new Instruction("CMP H", 1, 4, &CentralProcessingUnit::instruction_Compare)));
+    instructionSet.insert(std::make_pair(0xbd, new Instruction("CMP L", 1, 4, &CentralProcessingUnit::instruction_Compare)));
+    instructionSet.insert(std::make_pair(0xbe, new Instruction("CMP (HL)", 1, 8, &CentralProcessingUnit::instruction_Compare)));
+    instructionSet.insert(std::make_pair(0xbf, new Instruction("CMP A", 1, 4, &CentralProcessingUnit::instruction_Compare)));
+    instructionSet.insert(std::make_pair(0xfe, new Instruction("CMP n", 2, 8, &CentralProcessingUnit::instruction_Compare)));
+
+    instructionSet.insert(std::make_pair(0x02, new Instruction("LD (BC) A", 1, 8, &CentralProcessingUnit::instruction_LoadA2Mem)));
+    instructionSet.insert(std::make_pair(0x12, new Instruction("LD (DE) A", 1, 8, &CentralProcessingUnit::instruction_LoadA2Mem)));
+    instructionSet.insert(std::make_pair(0xea, new Instruction("LD (nn) A", 3, 16, &CentralProcessingUnit::instruction_LoadA2Mem)));
+
+    instructionSet.insert(std::make_pair(0xf0, new Instruction("LD A,(FF00+u8)", 2, 12, &CentralProcessingUnit::instruction_LoadAnn)));
+
 }
 
 CentralProcessingUnit::~CentralProcessingUnit() {
@@ -293,11 +313,16 @@ void CentralProcessingUnit::Print() {
 uint8_t CentralProcessingUnit::ExecuteInstruction(uint16_t skipDebug) {
     bool debug = (this->ProgramCounter > skipDebug);
     this->deltaTime = 0;
-    uint16_t opcode = mmu->Read8BitData(this->ProgramCounter);
+    uint16_t opcode = mmu->Read(this->ProgramCounter);
+    if(this->ProgramCounter == 0x0 && this->time != 0) {
+        printf("Starting execution at 0x0000\n");
+        exit(0);
+    }
+
     if(debug) printf("Executing at 0x%04x, OpCode: 0x%02x ", this->ProgramCounter, opcode);
     if(opcode == 0xcb) {
         this->ProgramCounter++;
-        opcode = mmu->Read8BitData(this->ProgramCounter) + 0xff;
+        opcode = mmu->Read(this->ProgramCounter) + 0xff;
         if(debug) printf("Extended OpCode: 0x%04x ", opcode);
     }
 
@@ -306,7 +331,7 @@ uint8_t CentralProcessingUnit::ExecuteInstruction(uint16_t skipDebug) {
         uint8_t *data = (uint8_t*) malloc(instructionSet[opcode]->size * sizeof(uint8_t));
         if(debug) printf("Data[] = ");
         for (size_t i = 0; i < instructionSet[opcode]->size; i++) {
-            data[i] = mmu->Read8BitData(this->ProgramCounter + i);
+            data[i] = mmu->Read(this->ProgramCounter + i);
             if(debug) printf("%d, ", data[i]);
         }
         if(debug) printf("\n");
@@ -317,7 +342,7 @@ uint8_t CentralProcessingUnit::ExecuteInstruction(uint16_t skipDebug) {
         }
         this->time += this->deltaTime;
     } else {
-        printf("OpCode Not Implemented\n");
+        printf("OpCode Not Implemented at 0x%04x, OpCode: 0x%02x\n", this->ProgramCounter, opcode);
         exit(0);
     }
     // if(debug) Print();
@@ -361,7 +386,7 @@ bool CentralProcessingUnit::instruction_XOROP(uint8_t* data) {
     else if (data[0] == 0xae) {
         uint16_t addr = this->h;
         addr = (addr << 8) | this->l;
-        d = mmu->Read8BitData(addr);
+        d = mmu->Read(addr);
     } else if (data[0] == 0xee)
         d = data[1];
 
@@ -393,7 +418,7 @@ bool CentralProcessingUnit::instruction_Load(uint8_t* data) {
             // load value from a into address at hl and
             // decrement hl
             uint16_t addr = (((uint16_t)this->h) << 8) | this->l;
-            mmu->Write8BitData(addr, this->accumulator);
+            mmu->Write(addr, this->accumulator);
             addr--;
             this->l = addr & 0xff;
             this->h = addr >> 8;
@@ -401,19 +426,19 @@ bool CentralProcessingUnit::instruction_Load(uint8_t* data) {
         }
         case 0xe2: {
             //Put A into address $FF00 + register C
-            mmu->Write8BitData(0xFF00 + (uint16_t)this->c, this->accumulator);
+            mmu->Write(0xFF00 + (uint16_t)this->c, this->accumulator);
             break;
 
         }
         case 0xe0: {
             //Put A into memory address $FF00+n (n is immediate 8 bit value)
-            mmu->Write8BitData(0xff00 + (uint16_t)data[1], this->accumulator);
+            mmu->Write(0xff00 + (uint16_t)data[1], this->accumulator);
             break;
         }
         case 0x22: {
             // load a into (HL) and increment HL
             uint16_t addr = (((uint16_t)this->h)<<8) | this->l;
-            mmu->Write8BitData(addr, this->accumulator);
+            mmu->Write(addr, this->accumulator);
             addr++;
             this->h = (addr >> 8);
             this->l = addr;
@@ -444,7 +469,7 @@ bool CentralProcessingUnit::instruction_BIT7(uint8_t* data) {
     else if (data[0] == 0x7e) {
         uint16_t addr = this->h;
         addr = (addr << 8) | this->l;
-        uint8_t val = mmu->Read8BitData(addr);
+        uint8_t val = mmu->Read(addr);
         this->isZero = (val & (1 << 7)) == 0;
         this->isHalfCarry = 1;
         this->isSubstract = 0;
@@ -522,12 +547,12 @@ bool CentralProcessingUnit::instruction_Inc(uint8_t* data) {
         reg = &(this-> l);
     else if (data[0] == 0x34) {
         uint16_t addr = (((uint16_t)this->h)<<8) | (this->l);
-        uint8_t val = mmu->Read8BitData(addr);
+        uint8_t val = mmu->Read(addr);
         this->isHalfCarry = ((val & 0xf) == 1);
         val++;
         this->isZero = (val == 0);
         this->isSubstract = 0;
-        mmu->Write8BitData(addr, val);
+        mmu->Write(addr, val);
         return true;
     }
 
@@ -556,12 +581,12 @@ bool CentralProcessingUnit::instruction_Dec(uint8_t* data) {
         reg = &(this->l);
     else if (data[0] == 0x35) {
         uint16_t addr = (((uint16_t)this->h)<<8) | (this->l);
-        uint8_t val = mmu->Read8BitData(addr);
+        uint8_t val = mmu->Read(addr);
         this->isHalfCarry = ((val & 0xf) == 1);
         val--;
         this->isZero = (val == 0);
         this->isSubstract = 1;
-        mmu->Write8BitData(addr, val);
+        mmu->Write(addr, val);
         return true;
     }
 
@@ -617,22 +642,22 @@ bool CentralProcessingUnit::instruction_LoadReg2Mem(uint8_t* data) {
     if (data[0] == 0x36)
         from = data[1];
     else if (data[0] == 0x70)
-        from = (this->b);
+        from = this->b;
     else if (data[0] == 0x71)
-        from = (this->c);
+        from = this->c;
     else if (data[0] == 0x72)
-        from = (this->d);
+        from = this->d;
     else if (data[0] == 0x73)
-        from = (this->e);
+        from = this->e;
     else if (data[0] == 0x74)
-        from = (this->h);
+        from = this->h;
     else if (data[0] == 0x75)
-        from = (this->l);
+        from = this->l;
     else if (data[0] == 0x77)
-        from = (this->accumulator);
+        from = this->accumulator;
 
     uint16_t addr = (((uint16_t)(this->h)) << 8) |(this -> l);
-    mmu->Write8BitData(addr, from);
+    mmu->Write(addr, from);
     return true;
 }
 
@@ -648,7 +673,21 @@ bool CentralProcessingUnit::instruction_LoadAIndirect(uint8_t* data) {
         hi = data[2], lo = data[1];
 
     uint16_t addr = (hi << 8) | lo;
-    this->accumulator = mmu->Read8BitData(addr);
+    this->accumulator = mmu->Read(addr);
+    return true;
+}
+
+bool CentralProcessingUnit::instruction_LoadA2Mem(uint8_t* data) {
+    uint16_t hi, lo;
+    if (data[0] == 0x02)
+        hi = this->b, lo = this->c;
+    else if (data[0] == 0x12)
+        hi = this->d, lo = this->e;
+    else if (data[0] == 0xea)
+        hi = data[2], lo = data[1];
+
+    uint16_t addr = (hi << 8) | lo;
+    mmu->Write(addr, this->accumulator);
     return true;
 }
 
@@ -668,7 +707,7 @@ bool CentralProcessingUnit::instruction_LoadReg2Reg(uint8_t* data) {
         val = this->l;
     else if (data[0] == 0x46 || data[0] == 0x4e || data[0] == 0x56 || data[0] == 0x5e || data[0] == 0x66 || data[0] == 0x6e || data[0] == 0x7e) {
         uint16_t addr = ((uint16_t)(this->h) << 8) | (this->l);
-        val = mmu->Read8BitData(addr);
+        val = mmu->Read(addr);
     } else if (data[0] == 0x47 || data[0] == 0x4f || data[0] == 0x57 || data[0] == 0x5f || data[0] == 0x67 || data[0] == 0x6f || data[0] == 0x7f)
         val = this->accumulator;
 
@@ -691,8 +730,6 @@ bool CentralProcessingUnit::instruction_LoadReg2Reg(uint8_t* data) {
 }
 
 bool CentralProcessingUnit::instruction_Call(uint8_t* data) {
-    // Push address of next instruction onto stack and then
-    // jump to address ()
     bool condition;
     if (data[0] == 0xcd)
         condition = true;
@@ -707,10 +744,12 @@ bool CentralProcessingUnit::instruction_Call(uint8_t* data) {
 
     if (condition) {
         this->deltaTime = 24;
+
         this->stackPointer--;
-        mmu->Write8BitData(this->stackPointer, data[3] >> 8);
+        mmu->Write(this->stackPointer, (this->ProgramCounter + 3) >> 8);
         this->stackPointer--;
-        mmu->Write8BitData(this->stackPointer, data[3]);
+        mmu->Write(this->stackPointer, (this->ProgramCounter + 3));
+
         uint16_t next = data[2];
         next = (next << 8) | (data[1]);
         this->ProgramCounter = next;
@@ -731,9 +770,9 @@ bool CentralProcessingUnit::instruction_Push(uint8_t* data) {
         hi = this->h, lo = this->l;
 
     this->stackPointer--;
-    mmu->Write8BitData(this->stackPointer, hi);
+    mmu->Write(this->stackPointer, hi);
     this->stackPointer--;
-    mmu->Write8BitData(this->stackPointer, lo);
+    mmu->Write(this->stackPointer, lo);
     return true;
 }
 
@@ -746,14 +785,14 @@ bool CentralProcessingUnit::instruction_Pop(uint8_t* data) {
     else if (data[0] == 0xe1)
         hi = &(this->h), lo = &(this->l);
     else if (data[0] == 0xf1) {
-        this->accumulator = mmu->Read8BitData(this->stackPointer + 1);
-        this->setFlags(mmu->Read8BitData(this->stackPointer));
+        this->accumulator = mmu->Read(this->stackPointer + 1);
+        this->setFlags(mmu->Read(this->stackPointer));
         this->stackPointer += 2;
         return true;
     }
 
-    *lo = mmu->Read8BitData(this->stackPointer);
-    *hi = mmu->Read8BitData(this->stackPointer + 1);
+    *lo = mmu->Read(this->stackPointer);
+    *hi = mmu->Read(this->stackPointer + 1);
     this->stackPointer += 2;
     return true;
 }
@@ -777,14 +816,14 @@ bool CentralProcessingUnit::instruction_Rotate(uint8_t* data) {
     else if (data[0] == 0x16) {
         uint16_t addr = this->h;
         addr = (addr << 8) | this->l;
-        uint8_t val = mmu->Read8BitData(addr);
+        uint8_t val = mmu->Read(addr);
 
         int temp = this->isCarry;
         this->isCarry = (val >> 7) & 1;
         val = val << 1 | temp;
         this->isZero = (val == 0);
 
-        mmu->Write8BitData(addr, val);
+        mmu->Write(addr, val);
         return true;
     }
 
@@ -808,8 +847,8 @@ bool CentralProcessingUnit::instruction_Return(uint8_t* data) {
         condition = this->isCarry;
 
     if (condition) {
-        uint16_t lo = mmu->Read8BitData(this->stackPointer);
-        uint16_t hi = mmu->Read8BitData(this->stackPointer + 1);
+        uint16_t lo = mmu->Read(this->stackPointer);
+        uint16_t hi = mmu->Read(this->stackPointer + 1);
         this->stackPointer += 2;
         this->ProgramCounter = (hi << 8) | lo;
         if (data[0] == 0xc9)
@@ -817,8 +856,42 @@ bool CentralProcessingUnit::instruction_Return(uint8_t* data) {
         else
             this->deltaTime = 20;
         return false;
-    } else {
-        this->deltaTime = 8;
-        return true;
     }
+
+    this->deltaTime = 8;
+    return true;
+}
+
+bool CentralProcessingUnit::instruction_Compare(uint8_t* data) {
+    uint8_t n = 0;
+    if (data[0] == 0xbf)
+        n = this->accumulator;
+    else if (data[0] == 0xb8)
+        n = this->b;
+    else if (data[0] == 0xb9)
+        n = this->c;
+    else if (data[0] == 0xba)
+        n = this->d;
+    else if (data[0] == 0xbb)
+        n = this->e;
+    else if (data[0] == 0xbc)
+        n = this->h;
+    else if (data[0] == 0xbd)
+        n = this->l;
+    else if (data[0] == 0xbe)
+        n = mmu->Read((((uint16_t)this->h) << 8) | (this -> l));
+    else if (data[0] == 0xfe)
+        n = data[1];
+
+    uint8_t val = this->accumulator - n;
+    this->isZero = (val == 0);
+    this->isSubstract = true;
+    this->isHalfCarry = ((val & 0xf) > ((accumulator) & 0xf));
+    this->isCarry = (this->accumulator < n);
+    return true;
+}
+
+bool CentralProcessingUnit::instruction_LoadAnn(uint8_t* data) {
+    this->accumulator = mmu->Read(data[1] + (uint16_t)0xff00);
+    return true;
 }

@@ -1,120 +1,71 @@
 #pragma once
 
 #include <vector>
-
-// typedef struct _cartridge_t {
-//     uint8_t* title;
-//     uint8_t* rom;
-//     uint32_t size;
-// } Cartridge_t;
+#include "Cartridge.h"
 
 class MemoryManagementUnit {
 public:
-    MemoryManagementUnit();
-    void LoadBIOS();
-    void LoadCartridge(const char* filename);
+    MemoryManagementUnit(Cartridge* cart);
 
-    void TestMe();
-    uint8_t Read8BitData(uint16_t addr);
-    void Write8BitData(uint16_t addr, uint8_t data);
-    uint16_t Read16BitData(uint16_t addr);
-    void Write16BitData(uint16_t addr, uint16_t data);
+    uint8_t Read(uint16_t addr);
+    void Write(uint16_t addr, uint8_t data);
+
+    bool ReadIORegisterBit(uint16_t addr, uint8_t flag);
+    void WriteIORegisterBit(uint16_t addr, uint8_t flag, bool value);
 private:
+    void loadBIOS();
+
+    Cartridge *cartridge;
     std::vector<uint8_t> memory;
 };
 
-MemoryManagementUnit::MemoryManagementUnit() {
+MemoryManagementUnit::MemoryManagementUnit(Cartridge* cart) {
     printf("Creating Memory for MMU\n");
+    cartridge = cart;
     memory = std::vector<uint8_t>(0x10000);
-    LoadBIOS();
+    loadBIOS();
 }
 
-uint8_t MemoryManagementUnit::Read8BitData(uint16_t address) {
-    return memory[address];
+uint8_t MemoryManagementUnit::Read(uint16_t addr) {
+    if (addr >= 0x0 && addr <= 0x7FFF) {
+        if (addr <= 0xFF && memory[0xFF50] != 0x1)
+            return memory[addr];
+
+        // printf("Reading Cartridge: 0x%04x Data: 0x%02x\n", addr, cartridge->Read(addr));
+        return cartridge->Read(addr);
+    }
+
+    return memory[addr];
 }
 
-void MemoryManagementUnit::Write8BitData(uint16_t address, uint8_t data) {
-    memory[address] = data;
+void MemoryManagementUnit::Write(uint16_t addr, uint8_t data) {
+    if(addr == 0xFF50)
+        printf("Disabling boot procedure\n");
+    memory[addr] = data;
 }
 
-uint16_t MemoryManagementUnit::Read16BitData(uint16_t address) {
-    return memory[address] + (memory[address + 1] << 8);
-}
+void MemoryManagementUnit::loadBIOS() {
+    std::string path = "./roms/bios.gb";
+    printf("Loading Bios: %s\n", path.c_str());
+    std::ifstream biosFile;
+    biosFile.open(path, std::ifstream::binary);
+    biosFile.seekg(0, biosFile.beg);
 
-void MemoryManagementUnit::Write16BitData(uint16_t address, uint16_t data) {
-    memory[address] = data & 255;
-    memory[address + 1] = data >> 8;
-}
-
-void MemoryManagementUnit::LoadBIOS() {
-    const uint8_t bios[0x100] = {
-        0x31, 0xFE, 0xFF, 0xAF, 0x21, 0xFF, 0x9F, 0x32, 0xCB, 0x7C, 0x20, 0xFB, 0x21, 0x26, 0xFF, 0x0E,
-        0x11, 0x3E, 0x80, 0x32, 0xE2, 0x0C, 0x3E, 0xF3, 0xE2, 0x32, 0x3E, 0x77, 0x77, 0x3E, 0xFC, 0xE0,
-        0x47, 0x11, 0x04, 0x01, 0x21, 0x10, 0x80, 0x1A, 0xCD, 0x95, 0x00, 0xCD, 0x96, 0x00, 0x13, 0x7B,
-        0xFE, 0x34, 0x20, 0xF3, 0x11, 0xD8, 0x00, 0x06, 0x08, 0x1A, 0x13, 0x22, 0x23, 0x05, 0x20, 0xF9,
-        0x3E, 0x19, 0xEA, 0x10, 0x99, 0x21, 0x2F, 0x99, 0x0E, 0x0C, 0x3D, 0x28, 0x08, 0x32, 0x0D, 0x20,
-        0xF9, 0x2E, 0x0F, 0x18, 0xF3, 0x67, 0x3E, 0x64, 0x57, 0xE0, 0x42, 0x3E, 0x91, 0xE0, 0x40, 0x04,
-        0x1E, 0x02, 0x0E, 0x0C, 0xF0, 0x44, 0xFE, 0x90, 0x20, 0xFA, 0x0D, 0x20, 0xF7, 0x1D, 0x20, 0xF2,
-        0x0E, 0x13, 0x24, 0x7C, 0x1E, 0x83, 0xFE, 0x62, 0x28, 0x06, 0x1E, 0xC1, 0xFE, 0x64, 0x20, 0x06,
-        0x7B, 0xE2, 0x0C, 0x3E, 0x87, 0xF2, 0xF0, 0x42, 0x90, 0xE0, 0x42, 0x15, 0x20, 0xD2, 0x05, 0x20,
-        0x4F, 0x16, 0x20, 0x18, 0xCB, 0x4F, 0x06, 0x04, 0xC5, 0xCB, 0x11, 0x17, 0xC1, 0xCB, 0x11, 0x17,
-        0x05, 0x20, 0xF5, 0x22, 0x23, 0x22, 0x23, 0xC9, 0xCE, 0xED, 0x66, 0x66, 0xCC, 0x0D, 0x00, 0x0B,
-        0x03, 0x73, 0x00, 0x83, 0x00, 0x0C, 0x00, 0x0D, 0x00, 0x08, 0x11, 0x1F, 0x88, 0x89, 0x00, 0x0E,
-        0xDC, 0xCC, 0x6E, 0xE6, 0xDD, 0xDD, 0xD9, 0x99, 0xBB, 0xBB, 0x67, 0x63, 0x6E, 0x0E, 0xEC, 0xCC,
-        0xDD, 0xDC, 0x99, 0x9F, 0xBB, 0xB9, 0x33, 0x3E, 0x3c, 0x42, 0xB9, 0xA5, 0xB9, 0xA5, 0x42, 0x4C,
-        0x21, 0x04, 0x01, 0x11, 0xA8, 0x00, 0x1A, 0x13, 0xBE, 0x20, 0xFE, 0x23, 0x7D, 0xFE, 0x34, 0x20,
-        0xF5, 0x06, 0x19, 0x78, 0x86, 0x23, 0x05, 0x20, 0xFB, 0x86, 0x20, 0xFE, 0x3E, 0x01, 0xE0, 0x50
-    };
+    uint8_t bios[0x100];
+    biosFile.read((char*)&bios[0], 256);
+    biosFile.close();
 
     printf("Loading BIOS Data to MMU\n");
     memcpy(&memory[0x0], &bios[0], sizeof(bios));
 }
 
-void MemoryManagementUnit::LoadCartridge(const char* filename) {
-    /*
-    FILE *file = fopen(filename, "rb");
-    if(file) {
-        fseek(file, 0, SEEK_END);
-        uint32_t total = ftell(file);
-        fseek(file, 0, SEEK_SET);
-        if (total > 0) {
-            c = (cartridge_t*)malloc(sizeof(cartridge_t));
-            c->rom = (uint8_t*)malloc(sizeof(uint8_t) * total);
-            c->size = total;
-            if (fread(c->rom, 1, total, file) != total) {
-                free(c->rom);
-                free(c);
-                fclose(file);
-                sys_error("Problem loading cartridge");
-            }
-            c->title = strdup(filename);
-
-        }
-        fclose(file);
-    }
-    */
+bool MemoryManagementUnit::ReadIORegisterBit(uint16_t addr, uint8_t flag) { 
+    return memory[addr] & flag; 
 }
 
-void MemoryManagementUnit::TestMe() {
-    printf("Testing Memory Management Unit\n");
-    const uint16_t maxAddress = 0xFFFF;
-    const uint8_t max8Value = 0xFF;
-    printf("Testing 8bit read/write\n");
-    for (int i = 0; i < 5; i++) {
-        uint16_t address = rand() % maxAddress;
-        uint8_t value = rand() % max8Value;
-        Write8BitData(address, value);
-        uint8_t v = Read8BitData(address);
-        printf("Address: 0x%x Value: %d Passed:%s\n", address, value, (value == v)? "✅":"❌");
-    }
-
-    const uint8_t max16Value = 0xFF;
-    printf("Testing 16bit read/write\n");
-    for (int i = 0; i < 5; i++) {
-        uint16_t address = rand() % maxAddress;
-        uint16_t value = rand() % max16Value;
-        Write8BitData(address, value);
-        uint16_t v = Read8BitData(address);
-        printf("Address: 0x%x Value: %d Passed:%s\n", address, value, (value == v)? "✅":"❌");
-    }
+void MemoryManagementUnit::WriteIORegisterBit(uint16_t addr, uint8_t flag, bool value) { 
+    if(value) 
+        memory[addr] |= flag;
+    else 
+        memory[addr] &= ~flag;
 }

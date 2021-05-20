@@ -4,6 +4,11 @@
  
 int main(int argc, char *argv[]){
    std::cout << "Hello World!" << std::endl;
-   GBoy *bg = new GBoy();
+   GBoy *gb = new GBoy();
+
+   while (true) {
+      gb->ExecuteFrame();
+   }
+   
    return 0;
 }
