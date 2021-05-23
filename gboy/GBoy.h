@@ -41,7 +41,7 @@ GBoy::~GBoy() {
 }
 
 void GBoy::ExecuteStep() {
-    uint8_t opCycles = cpu->ExecuteInstruction(0xffff);
+    uint8_t opCycles = cpu->ExecuteInstruction(0xFFFF);
     ppu->Cycle(opCycles);
     timer->Cycle(opCycles);
 }

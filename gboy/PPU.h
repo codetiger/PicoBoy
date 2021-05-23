@@ -197,13 +197,13 @@ void PixelProcessingUnit::writeBGLine(uint8_t line) {
 
         int red, blue, green;
         if (color == 0) // white
-            red = blue = green = 0xff;
+            red = 0x9b, blue = 0xbc, green = 0x0f;
         else if (color == 1) // light gray
-            red = 0xcc, blue = 0xcc, green = 0xcc;
+            red = 0x8b, blue = 0xac, green = 0x0f;
         else if (color == 2) // dark gray
-            red = 0x77, blue = 0x77, green = 0x77;
+            red = 0x30, blue = 0x62, green = 0x30;
         else
-            red = blue = green = 0;
+            red = 0x0f, blue = 0x38, green = 0x0f;
 
         localFrameBuffer[screen_x][screen_y][0] = red;
         localFrameBuffer[screen_x][screen_y][1] = blue;
@@ -212,7 +212,62 @@ void PixelProcessingUnit::writeBGLine(uint8_t line) {
 }
 
 void PixelProcessingUnit::writeWindowLine(uint8_t line) {
-    printf("writeBGLine\n");
+    printf("writeWindowLine\n");
+    bool use_tile_set_zero = mmu->ReadIORegisterBit(AddrRegLcdControl, FlagLcdControlBgData);
+    bool use_tile_map_zero = !mmu->ReadIORegisterBit(AddrRegLcdControl, FlagLcdControlWindowMap);
+
+    uint16_t tile_set_address = use_tile_set_zero ? AddrTileData1Start : AddrTileData0Start;
+    uint16_t tile_map_address = use_tile_map_zero ? AddrBgMap0Start : AddrBgMap1Start;
+
+    uint screen_y = line;
+    uint8_t window_x = mmu->Read(AddrRegWindowX);
+    uint8_t window_y = mmu->Read(AddrRegWindowY);
+    uint scrolled_y = screen_y - window_y;
+
+    if (scrolled_y >= 144) { return; }
+
+    for (uint screen_x = 0; screen_x < 160; screen_x++) {
+        uint scrolled_x = screen_x + window_x - 7;
+
+        uint tile_x = scrolled_x / 8;
+        uint tile_y = scrolled_y / 8;
+        uint tile_pixel_x = scrolled_x % 8;
+        uint tile_pixel_y = scrolled_y % 8;
+
+        uint tile_index = tile_y * 32 + tile_x;
+        uint16_t tile_id_address = tile_map_address + tile_index;
+
+        uint8_t tile_id = mmu->Read(tile_id_address);
+        uint tile_data_mem_offset = use_tile_set_zero
+            ? tile_id * 16
+            : (static_cast<int8_t>(tile_id) + 128) * 16;
+
+        uint tile_data_line_offset = tile_pixel_y * 2;
+        uint16_t tile_line_data_start_address = tile_set_address + tile_data_mem_offset + tile_data_line_offset;
+
+        uint8_t pixels_1 = mmu->Read(tile_line_data_start_address);
+        uint8_t pixels_2 = mmu->Read(tile_line_data_start_address + 1);
+
+        uint8_t req_bit = 7 - (tile_pixel_x % 8);
+        uint8_t bit1 = (pixels_1 >> req_bit) & 1;
+        uint8_t bit2 = (pixels_2 >> req_bit) & 1;
+        uint8_t colorid = (bit1 << 1) | bit2;
+        int color = getColor(colorid, AddrRegBgPalette);
+
+        int red, blue, green;
+        if (color == 0) // white
+            red = 0x9b, blue = 0xbc, green = 0x0f;
+        else if (color == 1) // light gray
+            red = 0x8b, blue = 0xac, green = 0x0f;
+        else if (color == 2) // dark gray
+            red = 0x30, blue = 0x62, green = 0x30;
+        else
+            red = 0x0f, blue = 0x38, green = 0x0f;
+
+        localFrameBuffer[screen_x][screen_y][0] = red;
+        localFrameBuffer[screen_x][screen_y][1] = blue;
+        localFrameBuffer[screen_x][screen_y][2] = green;
+    }
 }
 
 int PixelProcessingUnit::getColor(int id, uint16_t palette) {

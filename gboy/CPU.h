@@ -487,7 +487,7 @@ void CentralProcessingUnit::handleInterrupts() {
     if(!this->interruptMasterFlag)
         return;
 
-    printf("Handling Interrupt\n");
+    // printf("Handling Interrupt\n");
     this->interruptMasterFlag = false;
 
     uint16_t interruptAddr = 0;

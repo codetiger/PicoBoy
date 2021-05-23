@@ -65,10 +65,10 @@ uint8_t MemoryManagementUnit::Read(uint16_t addr) {
 
 void MemoryManagementUnit::Write(uint16_t addr, uint8_t data) {
     if (addr == AddrRegDma) {
-        printf("Loading DMA\n");
+        // printf("Loading DMA\n");
         LoadDMA(data);
     } else if(addr < 0x8000 || (addr >= 0xfea0 && addr < 0xfeff)) {
-        printf("Attempting to write to readonly: 0x%04x\n", addr);
+        // printf("Attempting to write to readonly: 0x%04x\n", addr);
         return; // Read only area
     } else if(0x8000 <= addr && addr <= 0x9FFF) {
         // printf("Writing to: 0x%04x\n", addr);

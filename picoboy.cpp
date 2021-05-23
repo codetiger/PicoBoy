@@ -9,6 +9,7 @@ int main(int argc, char *argv[]){
     SDL_Event event;
     SDL_Renderer *renderer;
     SDL_Window *window;
+    const uint8_t scale = 2;
 
     GBoy *gb = new GBoy("./roms/tetris.gb");
 
@@ -16,7 +17,7 @@ int main(int argc, char *argv[]){
         printf("error initializing SDL: %s\n", SDL_GetError());
     }
 
-    SDL_CreateWindowAndRenderer(160, 144, 0, &window, &renderer);
+    SDL_CreateWindowAndRenderer(160*scale, 144*scale, 0, &window, &renderer);
     SDL_SetWindowTitle(window, "PicoBoy");
 
     SDL_Texture *gb_screen_texture = SDL_CreateTexture(
@@ -52,7 +53,8 @@ int main(int argc, char *argv[]){
 
             SDL_UnlockTexture(gb_screen_texture);
 
-            SDL_RenderCopy(renderer, gb_screen_texture, nullptr, nullptr);
+            SDL_Rect dest_rect = { 0, 0, 160*scale, 144*scale };
+            SDL_RenderCopy(renderer, gb_screen_texture, nullptr, &dest_rect);
             SDL_RenderPresent(renderer);
         }
     }
