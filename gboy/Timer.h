@@ -19,7 +19,7 @@ private:
 public:
     Timer(MemoryManagementUnit *mmu);
     ~Timer();
-    void cycle(uint8_t cycles);
+    void Cycle(uint8_t cycles);
 };
 
 Timer::Timer(MemoryManagementUnit *mmu) {
@@ -35,7 +35,7 @@ Timer::Timer(MemoryManagementUnit *mmu) {
 Timer::~Timer() {
 }
 
-void Timer::cycle(uint8_t cycles) {
+void Timer::Cycle(uint8_t cycles) {
     uint16_t internalClock = (mmu->Read(0xFF04) << 8) | mmu->Read(0xFF03);
     internalClock += cycles;
     mmu->Write(0xFF04, (internalClock & 0xFF00) >> 8);
@@ -55,13 +55,12 @@ void Timer::handleTima(uint8_t cycles, uint16_t internalClock) {
             timaStartClock = internalClock;
             previousClock = internalClock - 1;
         }
-                
+        
         uint16_t bitToSelect = (CyclesCpu / getTimerFrequency()) >> 1;
         for(int clock = previousClock + 1; clock <= internalClock; clock++) {
             handleOverflow();
             bool currentPulse = clock & bitToSelect;
-            if(lastVisiblePulse && !currentPulse)
-            {                    
+            if(lastVisiblePulse && !currentPulse) {                    
                 uint8_t timerValue = mmu->Read(AddrRegTIMA) + 1;
                 pendingOverflow = timerValue == 0x00;
                 mmu->Write(AddrRegTIMA, timerValue);          

@@ -1,73 +1,61 @@
 #pragma once
 
-#include <chrono>
-
 #include "constants.h"
 #include "MMU.h"
 #include "CPU.h"
 #include "Timer.h"
 #include "Cartridge.h"
+#include "PPU.h"
+#include <time.h>
 
 class GBoy {
 private:
     MemoryManagementUnit *mmu;
     CentralProcessingUnit *cpu; 
+    PixelProcessingUnit *ppu;
     Timer *timer;
 
-    std::chrono::time_point<std::chrono::high_resolution_clock> frameStartTime;
-    bool hasFrameStarted;
-
-    bool isBooting;
-
-    void startFrame();
-    bool shouldWaitForFrame();
-
 public:
-    GBoy();
+    GBoy(std::string path);
     ~GBoy();
     void Print();
-    void ExecuteFrame();
+    void ExecuteStep();
+    bool GetFrameBufferUpdatedFlag();
+    void SetFrameBufferUpdatedFlag(bool v);
+
+    void GetFrameBufferColor(uint8_t &red, uint8_t &green, uint8_t &blue, uint8_t x, uint8_t y);
 };
 
-GBoy::GBoy() {
-    Cartridge *cart = new Cartridge("./roms/tetris.gb");
+GBoy::GBoy(std::string path) {
+    Cartridge *cart = new Cartridge(path);
     mmu = new MemoryManagementUnit(cart);
     cpu = new CentralProcessingUnit(mmu);
+    ppu = new PixelProcessingUnit(mmu);
     timer = new Timer(mmu);
 }
 
 GBoy::~GBoy() {
     delete mmu;
     delete cpu;
+    delete ppu;
 }
 
-void GBoy::startFrame() {
-    hasFrameStarted = true;
-    frameStartTime = std::chrono::high_resolution_clock::now();
+void GBoy::ExecuteStep() {
+    uint8_t opCycles = cpu->ExecuteInstruction(0x0100);
+    ppu->Cycle(opCycles);
+    timer->Cycle(opCycles);
 }
 
-bool GBoy::shouldWaitForFrame() {
-    std::chrono::time_point<std::chrono::high_resolution_clock> now = std::chrono::high_resolution_clock::now();
-    std::chrono::nanoseconds chronoOne = std::chrono::nanoseconds(OneFrameDurationNSec);
-    std::chrono::nanoseconds elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(now - frameStartTime);    
-    std::chrono::nanoseconds shouldSleep = std::chrono::duration_cast<std::chrono::nanoseconds>(chronoOne - elapsed);
-
-    return shouldSleep.count() > 0;
+void GBoy::GetFrameBufferColor(uint8_t &red, uint8_t &green, uint8_t &blue, uint8_t x, uint8_t y) {
+    red = ppu->FrameBuffer[x][y][0];
+    green = ppu->FrameBuffer[x][y][1];
+    blue = ppu->FrameBuffer[x][y][2];
 }
 
-void GBoy::ExecuteFrame() {
-    if(hasFrameStarted) while(shouldWaitForFrame());
-
-    int64_t cycles = CyclesFrame;
-    while (cycles > 0) {
-        if(!hasFrameStarted) 
-            startFrame();
-
-        uint8_t opCycles = cpu->ExecuteInstruction(0x0000);
-        opCycles = (opCycles == 0) ? 4 : opCycles;
-
-        timer->cycle(opCycles);
-        cycles -= opCycles;
-    }    
+bool GBoy::GetFrameBufferUpdatedFlag() {
+    return ppu->HasFrameBufferUpdated;
 }
 
+void GBoy::SetFrameBufferUpdatedFlag(bool v) {
+    ppu->HasFrameBufferUpdated = v;
+}

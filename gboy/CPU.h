@@ -10,8 +10,10 @@ private:
 	uint8_t b, c, d, e, h, l;
     uint16_t stackPointer;
     uint16_t time, deltaTime;
+    bool interruptMasterFlag;
 
     bool isZero, isSubstract, isCarry, isHalfCarry;
+    bool isHalted;
     MemoryManagementUnit *mmu;
 
     class Instruction {
@@ -62,6 +64,15 @@ private:
     bool instruction_Compare(uint8_t* data);
     bool instruction_LoadAnn(uint8_t* data);
 
+    bool instruction_Sub(uint8_t* data);
+    bool instruction_Add(uint8_t* data);
+    bool instruction_Jump(uint8_t* data);
+
+    bool instruction_SetInterrupt(uint8_t* data);
+    void handleInterrupts();
+    void serviceInterrupts(uint16_t addr, uint8_t flag);
+    void bootSequence();
+
 public:
 	uint16_t ProgramCounter;
 
@@ -74,10 +85,12 @@ public:
 
 CentralProcessingUnit::CentralProcessingUnit(MemoryManagementUnit *mmu) {
     this->mmu = mmu;
+    // bootSequence();
     this->ProgramCounter = 0x0;
     isZero = isSubstract = isCarry = isHalfCarry = false;
     this->stackPointer = 0x0;
     this->time = this->deltaTime = 0;
+    this->interruptMasterFlag = false;
     instructionSet.insert(std::make_pair(0x0, new Instruction("NOP", 1, 4, &CentralProcessingUnit::instruction_NOP)));
     instructionSet.insert(std::make_pair(0x31, new Instruction("LD SP,nn", 3, 12, &CentralProcessingUnit::instruction_LoadSP)));
 
@@ -275,6 +288,72 @@ CentralProcessingUnit::CentralProcessingUnit(MemoryManagementUnit *mmu) {
 
     instructionSet.insert(std::make_pair(0xf0, new Instruction("LD A,(FF00+u8)", 2, 12, &CentralProcessingUnit::instruction_LoadAnn)));
 
+    instructionSet.insert(std::make_pair(0x90, new Instruction("SUB B", 1, 4, &CentralProcessingUnit::instruction_Sub)));
+    instructionSet.insert(std::make_pair(0x91, new Instruction("SUB C", 1, 4, &CentralProcessingUnit::instruction_Sub)));
+    instructionSet.insert(std::make_pair(0x92, new Instruction("SUB D", 1, 4, &CentralProcessingUnit::instruction_Sub)));
+    instructionSet.insert(std::make_pair(0x93, new Instruction("SUB E", 1, 4, &CentralProcessingUnit::instruction_Sub)));
+    instructionSet.insert(std::make_pair(0x94, new Instruction("SUB H", 1, 4, &CentralProcessingUnit::instruction_Sub)));
+    instructionSet.insert(std::make_pair(0x95, new Instruction("SUB L", 1, 4, &CentralProcessingUnit::instruction_Sub)));
+    instructionSet.insert(std::make_pair(0x96, new Instruction("SUB (HL)", 1, 8, &CentralProcessingUnit::instruction_Sub)));
+    instructionSet.insert(std::make_pair(0x97, new Instruction("SUB A", 1, 4, &CentralProcessingUnit::instruction_Sub)));
+    instructionSet.insert(std::make_pair(0xd6, new Instruction("SUB n", 2, 8, &CentralProcessingUnit::instruction_Sub)));
+
+    instructionSet.insert(std::make_pair(0x80, new Instruction("ADD B", 1, 4, &CentralProcessingUnit::instruction_Add)));
+    instructionSet.insert(std::make_pair(0x81, new Instruction("ADD C", 1, 4, &CentralProcessingUnit::instruction_Add)));
+    instructionSet.insert(std::make_pair(0x82, new Instruction("ADD D", 1, 4, &CentralProcessingUnit::instruction_Add)));
+    instructionSet.insert(std::make_pair(0x83, new Instruction("ADD E", 1, 4, &CentralProcessingUnit::instruction_Add)));
+    instructionSet.insert(std::make_pair(0x84, new Instruction("ADD H", 1, 4, &CentralProcessingUnit::instruction_Add)));
+    instructionSet.insert(std::make_pair(0x85, new Instruction("ADD L", 1, 4, &CentralProcessingUnit::instruction_Add)));
+    instructionSet.insert(std::make_pair(0x86, new Instruction("ADD (HL)", 1, 8, &CentralProcessingUnit::instruction_Add)));
+    instructionSet.insert(std::make_pair(0x87, new Instruction("ADD A", 1, 4, &CentralProcessingUnit::instruction_Add)));
+    instructionSet.insert(std::make_pair(0xc6, new Instruction("ADD n", 2, 8, &CentralProcessingUnit::instruction_Add)));
+
+    instructionSet.insert(std::make_pair(0xc2, new Instruction("JP NZ nn", 2, 8, &CentralProcessingUnit::instruction_Jump)));
+    instructionSet.insert(std::make_pair(0xc3, new Instruction("JP nn", 2, 8, &CentralProcessingUnit::instruction_Jump)));
+    instructionSet.insert(std::make_pair(0xca, new Instruction("JP Z nn", 2, 8, &CentralProcessingUnit::instruction_Jump)));
+    instructionSet.insert(std::make_pair(0xd2, new Instruction("JP NC nn", 2, 8, &CentralProcessingUnit::instruction_Jump)));
+    instructionSet.insert(std::make_pair(0xda, new Instruction("JP CZ nn", 2, 8, &CentralProcessingUnit::instruction_Jump)));
+
+    instructionSet.insert(std::make_pair(0xf3, new Instruction("DI", 1, 4, &CentralProcessingUnit::instruction_SetInterrupt)));
+    instructionSet.insert(std::make_pair(0xfb, new Instruction("EI", 1, 4, &CentralProcessingUnit::instruction_SetInterrupt)));
+
+}
+
+void CentralProcessingUnit::bootSequence() {
+    mmu->Write(0xFF00, 0xCF);  // Joypad 1100 1111 (No Buttons pressed)
+    mmu->Write(0xFF05, 0x0);   // TIMA
+    mmu->Write(0xFF06, 0x0);   // TMA
+    mmu->Write(0xFF07, 0x0);   // TAC
+    mmu->Write(0xFF10, 0x80);  // NR10
+    mmu->Write(0xFF11, 0xBF);  // NR11
+    mmu->Write(0xFF12, 0xF3);  // NR12
+    mmu->Write(0xFF14, 0xBF);  // NR14
+    mmu->Write(0xFF16, 0x3F);  // NR21
+    mmu->Write(0xFF17, 0x00);  // NR22
+    mmu->Write(0xFF19, 0xBF);  // NR24
+    mmu->Write(0xFF1A, 0x7F);  // NR30
+    mmu->Write(0xFF1B, 0xFF);  // NR31
+    mmu->Write(0xFF1C, 0x9F);  // NR32
+    mmu->Write(0xFF1E, 0xBF);  // NR33
+    mmu->Write(0xFF20, 0xFF);  // NR41
+    mmu->Write(0xFF21, 0x00);  // NR42
+    mmu->Write(0xFF22, 0x00);  // NR43
+    mmu->Write(0xFF23, 0xBF);  // NR30
+    mmu->Write(0xFF24, 0x77);  // NR50
+    mmu->Write(0xFF25, 0xF3);  // NR51
+    mmu->Write(0xFF26, 0xF1);  // NR52
+    mmu->Write(0xFF40, 0x91);  // LCDC
+    mmu->Write(0xFF42, 0x00);  // SCY
+    mmu->Write(0xFF43, 0x00);  // SCX
+    mmu->Write(0xFF44, 0x00);  // LY
+    mmu->Write(0xFF45, 0x00);  // LYC
+    mmu->Write(0xFF47, 0xFC);  // BGP
+    mmu->Write(0xFF48, 0xFF);  // OBP0
+    mmu->Write(0xFF49, 0xFF);  // OBP1
+    mmu->Write(0xFF4A, 0x00);  // WY
+    mmu->Write(0xFF4B, 0x00);  // WX
+    mmu->Write(0xFF0F, 0x00);  // IF
+    mmu->Write(0xFFFF, 0x00);  // IE
 }
 
 CentralProcessingUnit::~CentralProcessingUnit() {
@@ -313,41 +392,106 @@ void CentralProcessingUnit::Print() {
 uint8_t CentralProcessingUnit::ExecuteInstruction(uint16_t skipDebug) {
     bool debug = (this->ProgramCounter > skipDebug);
     this->deltaTime = 0;
-    uint16_t opcode = mmu->Read(this->ProgramCounter);
-    if(this->ProgramCounter == 0x0 && this->time != 0) {
-        printf("Starting execution at 0x0000\n");
-        exit(0);
+
+    if(!isHalted) {
+        uint16_t opcode = mmu->Read(this->ProgramCounter);
+        if(this->ProgramCounter == 0x0 && this->time != 0) {
+            printf("Starting execution at 0x0000\n");
+            exit(0);
+        }
+
+        if(debug) printf("Executing at 0x%04x, OpCode: 0x%02x ", this->ProgramCounter, opcode);
+        if(opcode == 0xcb) {
+            this->ProgramCounter++;
+            opcode = mmu->Read(this->ProgramCounter) + 0xff;
+            if(debug) printf("Extended OpCode: 0x%04x ", opcode);
+        }
+
+        std::map<uint16_t, Instruction*>::iterator it = instructionSet.find(opcode);
+        if (it != instructionSet.end()) {
+            Instruction *inst = it->second;
+            if(debug) printf("Name: %s, ", inst->name.c_str());
+            uint8_t *data = (uint8_t*) malloc(inst->size * sizeof(uint8_t));
+            if(debug) printf("Data: ");
+            for (size_t i = 0; i < inst->size; i++) {
+                data[i] = mmu->Read(this->ProgramCounter + i);
+                if(debug && i > 0) printf("%d, ", data[i]);
+            }
+            if(debug) printf("\n");
+            
+            if((this->*(inst->code))(data)) {
+                this->deltaTime = inst->cycles;
+                this->ProgramCounter += inst->size;
+            }
+            this->time += this->deltaTime;
+        } else {
+            printf("OpCode Not Implemented at 0x%04x, OpCode: 0x%02x\n", this->ProgramCounter, opcode);
+            exit(0);
+        }
     }
 
-    if(debug) printf("Executing at 0x%04x, OpCode: 0x%02x ", this->ProgramCounter, opcode);
-    if(opcode == 0xcb) {
-        this->ProgramCounter++;
-        opcode = mmu->Read(this->ProgramCounter) + 0xff;
-        if(debug) printf("Extended OpCode: 0x%04x ", opcode);
-    }
-
-    if (instructionSet.find(opcode) != instructionSet.end()) {
-        if(debug) printf("Name: %s, ", instructionSet[opcode]->name.c_str());
-        uint8_t *data = (uint8_t*) malloc(instructionSet[opcode]->size * sizeof(uint8_t));
-        if(debug) printf("Data[] = ");
-        for (size_t i = 0; i < instructionSet[opcode]->size; i++) {
-            data[i] = mmu->Read(this->ProgramCounter + i);
-            if(debug) printf("%d, ", data[i]);
-        }
-        if(debug) printf("\n");
-        
-        if((this->*(instructionSet[opcode]->code))(data)) {
-            this->deltaTime = instructionSet[opcode]->cycles;
-            this->ProgramCounter += instructionSet[opcode]->size;
-        }
-        this->time += this->deltaTime;
-    } else {
-        printf("OpCode Not Implemented at 0x%04x, OpCode: 0x%02x\n", this->ProgramCounter, opcode);
-        exit(0);
-    }
+    handleInterrupts();
     // if(debug) Print();
 
     return this->deltaTime;
+}
+
+void CentralProcessingUnit::handleInterrupts() {
+    if(!this->interruptMasterFlag)
+        return;
+
+    printf("Handling Interrupt\n");
+    this->interruptMasterFlag = false;
+
+    uint16_t interruptAddr = 0;
+    uint8_t interruptFlag = 0;
+
+    bool vBlankInterrupt =  mmu->ReadIORegisterBit(AddrRegInterruptEnabled, FlagInterruptVBlank)
+                            && mmu->ReadIORegisterBit(AddrRegInterruptFlag, FlagInterruptVBlank);
+    bool lcdInterrupt =     mmu->ReadIORegisterBit(AddrRegInterruptEnabled, FlagInterruptLcd)
+                            && mmu->ReadIORegisterBit(AddrRegInterruptFlag, FlagInterruptLcd);
+    bool timerInterrupt =   mmu->ReadIORegisterBit(AddrRegInterruptEnabled, FlagInterruptTimer)
+                            && mmu->ReadIORegisterBit(AddrRegInterruptFlag, FlagInterruptTimer);
+    bool serialInterrupt =  mmu->ReadIORegisterBit(AddrRegInterruptEnabled, FlagInterruptSerial)
+                            && mmu->ReadIORegisterBit(AddrRegInterruptFlag, FlagInterruptSerial);
+    bool joypadInterrupt =  mmu->ReadIORegisterBit(AddrRegInterruptEnabled, FlagInterruptInput)
+                            && mmu->ReadIORegisterBit(AddrRegInterruptFlag, FlagInterruptInput);
+
+    if(vBlankInterrupt) {
+        interruptAddr = AddrVectorVBlank;
+        interruptFlag = FlagInterruptVBlank;
+        isHalted = false;
+    } else if(lcdInterrupt) {
+        interruptAddr = AddrVectorLcd;
+        interruptFlag = FlagInterruptLcd;
+        isHalted = false;
+    } else if(timerInterrupt) {
+        interruptAddr = AddrVectorTimer;
+        interruptFlag = FlagInterruptTimer;
+        isHalted = false;
+    } else if(serialInterrupt) {
+        interruptAddr = AddrVectorSerial;
+        interruptFlag = FlagInterruptSerial;
+        isHalted = false;
+    } else if(joypadInterrupt) {
+        interruptAddr = AddrVectorInput;
+        interruptFlag = FlagInterruptInput;
+        isHalted = false;
+    }
+    
+    if(interruptAddr != 0)
+        serviceInterrupts(interruptAddr, interruptFlag);
+}
+
+void CentralProcessingUnit::serviceInterrupts(uint16_t addr, uint8_t flag) {
+    mmu->WriteIORegisterBit(AddrRegInterruptFlag, flag, false);
+
+    this->stackPointer--;
+    mmu->Write(this->stackPointer, this->ProgramCounter >> 8);
+    this->stackPointer--;
+    mmu->Write(this->stackPointer, this->ProgramCounter);
+
+    this->ProgramCounter = addr;
 }
 
 bool CentralProcessingUnit::instruction_NOP(uint8_t* data) {
@@ -398,7 +542,6 @@ bool CentralProcessingUnit::instruction_XOROP(uint8_t* data) {
 }
 
 bool CentralProcessingUnit::instruction_LoadPair(uint8_t* data) {
-    // load given register pair with 2 byte immediate value
     uint8_t *hi, *lo;
     if (data[0] == 0x01)
         hi = &(this->b), lo = &(this->c);
@@ -415,8 +558,6 @@ bool CentralProcessingUnit::instruction_LoadPair(uint8_t* data) {
 bool CentralProcessingUnit::instruction_Load(uint8_t* data) {
     switch (data[0]) {
         case 0x32: {
-            // load value from a into address at hl and
-            // decrement hl
             uint16_t addr = (((uint16_t)this->h) << 8) | this->l;
             mmu->Write(addr, this->accumulator);
             addr--;
@@ -425,18 +566,14 @@ bool CentralProcessingUnit::instruction_Load(uint8_t* data) {
             break;
         }
         case 0xe2: {
-            //Put A into address $FF00 + register C
             mmu->Write(0xFF00 + (uint16_t)this->c, this->accumulator);
             break;
-
         }
         case 0xe0: {
-            //Put A into memory address $FF00+n (n is immediate 8 bit value)
             mmu->Write(0xff00 + (uint16_t)data[1], this->accumulator);
             break;
         }
         case 0x22: {
-            // load a into (HL) and increment HL
             uint16_t addr = (((uint16_t)this->h)<<8) | this->l;
             mmu->Write(addr, this->accumulator);
             addr++;
@@ -482,22 +619,16 @@ bool CentralProcessingUnit::instruction_BIT7(uint8_t* data) {
 }
 
 bool CentralProcessingUnit::instruction_JR(uint8_t* data) {
-    // add value n to the pc according to some condition
     bool condition = false;
     if (data[0] == 0x18)
-        // jump unconditionally
         condition = true;
     else if (data[0] == 0x20)
-        // jump if zero is reset
         condition = !(this->isZero);
     else if (data[0] == 0x28)
-        // jump if zero is set
         condition = (this->isZero);
     else if (data[0] == 0x30)
-        // jump if carry is reset
         condition = !(this->isCarry);
     else if (data[0] == 0x38)
-        // jump if carry is set
         condition = (this->isCarry);
 
     if (condition)
@@ -507,8 +638,6 @@ bool CentralProcessingUnit::instruction_JR(uint8_t* data) {
 }
 
 bool CentralProcessingUnit::instruction_LoadMem2Reg(uint8_t* data) {
-    // loads immediate value to register
-    // no flags are updated
     uint8_t* reg;
     if (data[0] == 0x06)
         reg = &(this->b);
@@ -858,7 +987,6 @@ bool CentralProcessingUnit::instruction_Return(uint8_t* data) {
         return false;
     }
 
-    this->deltaTime = 8;
     return true;
 }
 
@@ -893,5 +1021,104 @@ bool CentralProcessingUnit::instruction_Compare(uint8_t* data) {
 
 bool CentralProcessingUnit::instruction_LoadAnn(uint8_t* data) {
     this->accumulator = mmu->Read(data[1] + (uint16_t)0xff00);
+    return true;
+}
+
+bool CentralProcessingUnit::instruction_Sub(uint8_t* data) {
+    uint8_t d;
+    if (data[0] == 0x97)
+        d = this->accumulator;
+    else if (data[0] == 0x90)
+        d = this->b;
+    else if (data[0] == 0x91)
+        d = this->c;
+    else if (data[0] == 0x92)
+        d = this->d;
+    else if (data[0] == 0x93)
+        d = this->e;
+    else if (data[0] == 0x94)
+        d = this->h;
+    else if (data[0] == 0x95)
+        d = this->l;
+    else if (data[0] == 0x96) {
+        uint16_t addr = this->h;
+        addr = (addr << 8) | this->l;
+        d = mmu->Read(addr);
+    } else if (data[0] == 0xd6)
+        d = data[1];
+
+    this->isZero = (this->accumulator == d);
+    this->isSubstract = 1;
+    this->isCarry = (this->accumulator < d);
+    this->isHalfCarry = (this->accumulator & 0xf) < (d & 0xf);
+    this->accumulator = this->accumulator - d;
+    return true;
+}
+
+bool CentralProcessingUnit::instruction_Add(uint8_t* data) {
+    uint8_t d;
+    if (data[0] == 0x87)
+        d = this->accumulator;
+    else if (data[0] == 0x80)
+        d = this->b;
+    else if (data[0] == 0x81)
+        d = this->c;
+    else if (data[0] == 0x82)
+        d = this->d;
+    else if (data[0] == 0x83)
+        d = this->e;
+    else if (data[0] == 0x84)
+        d = this->h;
+    else if (data[0] == 0x85)
+        d = this->l;
+    else if (data[0] == 0x86) {
+        uint16_t addr = this->h;
+        addr = (addr << 8) | this->l;
+        d = mmu->Read(addr);
+    } else if (data[0] == 0xc6)
+        d = data[1];
+
+    uint16_t val = d;
+    val += this->accumulator;
+
+    this->isZero = (val & 0xff) == 0;
+    this->isCarry = (val >> 8) & 1;
+    uint8_t half = (this->accumulator & 0xf) + (d & 0xf);
+    this->isHalfCarry = (half >> 4) & 1;
+    this->isSubstract = 0;
+
+    this->accumulator += d;
+    return true;
+}
+
+bool CentralProcessingUnit::instruction_Jump(uint8_t* data) {
+    bool condition = false;
+    if (data[0] == 0xc3)
+        condition = true;
+    else if (data[0] == 0xc2)
+        condition = !(this->isZero);
+    else if (data[0] == 0xca)
+        condition = (this->isZero);
+    else if (data[0] == 0xd2)
+        condition = !(this->isCarry);
+    else if (data[0] == 0xda)
+        condition = (this->isCarry);
+
+    if (condition) {
+        uint16_t lo = data[1];
+        uint16_t hi = data[2];
+        this->ProgramCounter = (hi << 8) | lo;
+        this->deltaTime = 16;
+        return false;
+    }
+
+    return true;
+}
+
+bool CentralProcessingUnit::instruction_SetInterrupt(uint8_t* data) {
+    if (data[0] == 0xfb)
+        this->interruptMasterFlag = true;
+    else if (data[0] == 0xf3)
+        this->interruptMasterFlag = false;
     return true;
 }
