@@ -12,7 +12,7 @@ private:
     uint16_t time, deltaTime;
     bool interruptMasterFlag;
 
-    bool isZero, isSubstract, isCarry, isHalfCarry;
+    bool isZero, isSubtract, isCarry, isHalfCarry;
     bool isHalted;
     MemoryManagementUnit *mmu;
 
@@ -60,6 +60,7 @@ private:
     bool instruction_Pop(uint8_t* data);
     bool instruction_Rotate(uint8_t* data);
     bool instruction_Return(uint8_t* data);
+    bool instruction_Reti(uint8_t* data);
     
     bool instruction_Compare(uint8_t* data);
     bool instruction_LoadAnn(uint8_t* data);
@@ -67,11 +68,23 @@ private:
     bool instruction_Sub(uint8_t* data);
     bool instruction_Add(uint8_t* data);
     bool instruction_Jump(uint8_t* data);
+    bool instruction_LoadAHL(uint8_t* data);
+    bool instruction_JumpHL(uint8_t* data);
+
+    bool instruction_OR(uint8_t* data);
+    bool instruction_AND(uint8_t* data);
+    bool instruction_CPL(uint8_t* data);
+    bool instruction_Swap(uint8_t* data);
+    bool instruction_Reset(uint8_t* data);
+    bool instruction_AddPair(uint8_t* data);
+
+    bool instruction_SRL(uint8_t* data);
+
+    bool instruction_ResetBit0(uint8_t* data);
 
     bool instruction_SetInterrupt(uint8_t* data);
     void handleInterrupts();
     void serviceInterrupts(uint16_t addr, uint8_t flag);
-    void bootSequence();
 
 public:
 	uint16_t ProgramCounter;
@@ -85,9 +98,9 @@ public:
 
 CentralProcessingUnit::CentralProcessingUnit(MemoryManagementUnit *mmu) {
     this->mmu = mmu;
-    // bootSequence();
+    this->isHalted = false;
     this->ProgramCounter = 0x0;
-    isZero = isSubstract = isCarry = isHalfCarry = false;
+    isZero = isSubtract = isCarry = isHalfCarry = false;
     this->stackPointer = 0x0;
     this->time = this->deltaTime = 0;
     this->interruptMasterFlag = false;
@@ -160,8 +173,11 @@ CentralProcessingUnit::CentralProcessingUnit(MemoryManagementUnit *mmu) {
     instructionSet.insert(std::make_pair(0x7e, new Instruction("LD A (HL)", 1, 8, &CentralProcessingUnit::instruction_LoadAIndirect)));
     instructionSet.insert(std::make_pair(0xfa, new Instruction("LD A nn", 3, 16, &CentralProcessingUnit::instruction_LoadAIndirect)));
 
-    instructionSet.insert(std::make_pair(0xcd, new Instruction("CALL Z nn", 3, 12, &CentralProcessingUnit::instruction_Call)));
+    instructionSet.insert(std::make_pair(0xc4, new Instruction("CALL NZ nn", 3, 12, &CentralProcessingUnit::instruction_Call)));
+    instructionSet.insert(std::make_pair(0xcc, new Instruction("CALL Z nn", 3, 12, &CentralProcessingUnit::instruction_Call)));
     instructionSet.insert(std::make_pair(0xcd, new Instruction("CALL nn", 3, 24, &CentralProcessingUnit::instruction_Call)));
+    instructionSet.insert(std::make_pair(0xd4, new Instruction("CALL NC nn", 3, 24, &CentralProcessingUnit::instruction_Call)));
+    instructionSet.insert(std::make_pair(0xdc, new Instruction("CALL C nn", 3, 24, &CentralProcessingUnit::instruction_Call)));
 
     instructionSet.insert(std::make_pair(0x40, new Instruction("LD B B", 1, 4, &CentralProcessingUnit::instruction_LoadReg2Reg)));
     instructionSet.insert(std::make_pair(0x41, new Instruction("LD B C", 1, 4, &CentralProcessingUnit::instruction_LoadReg2Reg)));
@@ -308,52 +324,82 @@ CentralProcessingUnit::CentralProcessingUnit(MemoryManagementUnit *mmu) {
     instructionSet.insert(std::make_pair(0x87, new Instruction("ADD A", 1, 4, &CentralProcessingUnit::instruction_Add)));
     instructionSet.insert(std::make_pair(0xc6, new Instruction("ADD n", 2, 8, &CentralProcessingUnit::instruction_Add)));
 
-    instructionSet.insert(std::make_pair(0xc2, new Instruction("JP NZ nn", 2, 8, &CentralProcessingUnit::instruction_Jump)));
-    instructionSet.insert(std::make_pair(0xc3, new Instruction("JP nn", 2, 8, &CentralProcessingUnit::instruction_Jump)));
-    instructionSet.insert(std::make_pair(0xca, new Instruction("JP Z nn", 2, 8, &CentralProcessingUnit::instruction_Jump)));
-    instructionSet.insert(std::make_pair(0xd2, new Instruction("JP NC nn", 2, 8, &CentralProcessingUnit::instruction_Jump)));
-    instructionSet.insert(std::make_pair(0xda, new Instruction("JP CZ nn", 2, 8, &CentralProcessingUnit::instruction_Jump)));
+    instructionSet.insert(std::make_pair(0xc2, new Instruction("JP NZ nn", 3, 12, &CentralProcessingUnit::instruction_Jump)));
+    instructionSet.insert(std::make_pair(0xc3, new Instruction("JP nn", 3, 12, &CentralProcessingUnit::instruction_Jump)));
+    instructionSet.insert(std::make_pair(0xca, new Instruction("JP Z nn", 3, 12, &CentralProcessingUnit::instruction_Jump)));
+    instructionSet.insert(std::make_pair(0xd2, new Instruction("JP NC nn", 3, 12, &CentralProcessingUnit::instruction_Jump)));
+    instructionSet.insert(std::make_pair(0xda, new Instruction("JP CZ nn", 3, 12, &CentralProcessingUnit::instruction_Jump)));
 
     instructionSet.insert(std::make_pair(0xf3, new Instruction("DI", 1, 4, &CentralProcessingUnit::instruction_SetInterrupt)));
     instructionSet.insert(std::make_pair(0xfb, new Instruction("EI", 1, 4, &CentralProcessingUnit::instruction_SetInterrupt)));
 
-}
+    instructionSet.insert(std::make_pair(0x2a, new Instruction("LDI HL A", 1, 8, &CentralProcessingUnit::instruction_LoadAHL)));
 
-void CentralProcessingUnit::bootSequence() {
-    mmu->Write(0xFF00, 0xCF);  // Joypad 1100 1111 (No Buttons pressed)
-    mmu->Write(0xFF05, 0x0);   // TIMA
-    mmu->Write(0xFF06, 0x0);   // TMA
-    mmu->Write(0xFF07, 0x0);   // TAC
-    mmu->Write(0xFF10, 0x80);  // NR10
-    mmu->Write(0xFF11, 0xBF);  // NR11
-    mmu->Write(0xFF12, 0xF3);  // NR12
-    mmu->Write(0xFF14, 0xBF);  // NR14
-    mmu->Write(0xFF16, 0x3F);  // NR21
-    mmu->Write(0xFF17, 0x00);  // NR22
-    mmu->Write(0xFF19, 0xBF);  // NR24
-    mmu->Write(0xFF1A, 0x7F);  // NR30
-    mmu->Write(0xFF1B, 0xFF);  // NR31
-    mmu->Write(0xFF1C, 0x9F);  // NR32
-    mmu->Write(0xFF1E, 0xBF);  // NR33
-    mmu->Write(0xFF20, 0xFF);  // NR41
-    mmu->Write(0xFF21, 0x00);  // NR42
-    mmu->Write(0xFF22, 0x00);  // NR43
-    mmu->Write(0xFF23, 0xBF);  // NR30
-    mmu->Write(0xFF24, 0x77);  // NR50
-    mmu->Write(0xFF25, 0xF3);  // NR51
-    mmu->Write(0xFF26, 0xF1);  // NR52
-    mmu->Write(0xFF40, 0x91);  // LCDC
-    mmu->Write(0xFF42, 0x00);  // SCY
-    mmu->Write(0xFF43, 0x00);  // SCX
-    mmu->Write(0xFF44, 0x00);  // LY
-    mmu->Write(0xFF45, 0x00);  // LYC
-    mmu->Write(0xFF47, 0xFC);  // BGP
-    mmu->Write(0xFF48, 0xFF);  // OBP0
-    mmu->Write(0xFF49, 0xFF);  // OBP1
-    mmu->Write(0xFF4A, 0x00);  // WY
-    mmu->Write(0xFF4B, 0x00);  // WX
-    mmu->Write(0xFF0F, 0x00);  // IF
-    mmu->Write(0xFFFF, 0x00);  // IE
+    instructionSet.insert(std::make_pair(0xb0, new Instruction("OR B", 1, 4, &CentralProcessingUnit::instruction_OR)));
+    instructionSet.insert(std::make_pair(0xb1, new Instruction("OR C", 1, 4, &CentralProcessingUnit::instruction_OR)));
+    instructionSet.insert(std::make_pair(0xb2, new Instruction("OR D", 1, 4, &CentralProcessingUnit::instruction_OR)));
+    instructionSet.insert(std::make_pair(0xb3, new Instruction("OR E", 1, 4, &CentralProcessingUnit::instruction_OR)));
+    instructionSet.insert(std::make_pair(0xb4, new Instruction("OR H", 1, 4, &CentralProcessingUnit::instruction_OR)));
+    instructionSet.insert(std::make_pair(0xb5, new Instruction("OR L", 1, 4, &CentralProcessingUnit::instruction_OR)));
+    instructionSet.insert(std::make_pair(0xb6, new Instruction("OR (HL)", 1, 8, &CentralProcessingUnit::instruction_OR)));
+    instructionSet.insert(std::make_pair(0xb7, new Instruction("OR A", 1, 4, &CentralProcessingUnit::instruction_OR)));
+    instructionSet.insert(std::make_pair(0xf6, new Instruction("OR n", 2, 8, &CentralProcessingUnit::instruction_OR)));
+
+    instructionSet.insert(std::make_pair(0xa0, new Instruction("AND B", 1, 4, &CentralProcessingUnit::instruction_AND)));
+    instructionSet.insert(std::make_pair(0xa1, new Instruction("AND C", 1, 4, &CentralProcessingUnit::instruction_AND)));
+    instructionSet.insert(std::make_pair(0xa2, new Instruction("AND D", 1, 4, &CentralProcessingUnit::instruction_AND)));
+    instructionSet.insert(std::make_pair(0xa3, new Instruction("AND E", 1, 4, &CentralProcessingUnit::instruction_AND)));
+    instructionSet.insert(std::make_pair(0xa4, new Instruction("AND H", 1, 4, &CentralProcessingUnit::instruction_AND)));
+    instructionSet.insert(std::make_pair(0xa5, new Instruction("AND L", 1, 4, &CentralProcessingUnit::instruction_AND)));
+    instructionSet.insert(std::make_pair(0xa6, new Instruction("AND (HL)", 1, 8, &CentralProcessingUnit::instruction_AND)));
+    instructionSet.insert(std::make_pair(0xa7, new Instruction("AND A", 1, 4, &CentralProcessingUnit::instruction_AND)));
+    instructionSet.insert(std::make_pair(0xe6, new Instruction("AND n", 2, 8, &CentralProcessingUnit::instruction_AND)));
+
+    instructionSet.insert(std::make_pair(0x137, new Instruction("SRL B", 1, 8, &CentralProcessingUnit::instruction_SRL)));
+    instructionSet.insert(std::make_pair(0x138, new Instruction("SRL C", 1, 8, &CentralProcessingUnit::instruction_SRL)));
+    instructionSet.insert(std::make_pair(0x139, new Instruction("SRL D", 1, 8, &CentralProcessingUnit::instruction_SRL)));
+    instructionSet.insert(std::make_pair(0x13a, new Instruction("SRL E", 1, 8, &CentralProcessingUnit::instruction_SRL)));
+    instructionSet.insert(std::make_pair(0x13b, new Instruction("SRL H", 1, 8, &CentralProcessingUnit::instruction_SRL)));
+    instructionSet.insert(std::make_pair(0x13c, new Instruction("SRL L", 1, 8, &CentralProcessingUnit::instruction_SRL)));
+    instructionSet.insert(std::make_pair(0x13d, new Instruction("SRL (HL)", 1, 16, &CentralProcessingUnit::instruction_SRL)));
+    instructionSet.insert(std::make_pair(0x13e, new Instruction("SRL A", 1, 8, &CentralProcessingUnit::instruction_SRL)));
+
+    instructionSet.insert(std::make_pair(0xd9, new Instruction("RETI", 1, 16, &CentralProcessingUnit::instruction_Reti)));
+    instructionSet.insert(std::make_pair(0x2f, new Instruction("CPL", 1, 4, &CentralProcessingUnit::instruction_CPL)));
+
+    instructionSet.insert(std::make_pair(0x12f, new Instruction("SWAP B", 1, 8, &CentralProcessingUnit::instruction_Swap)));
+    instructionSet.insert(std::make_pair(0x130, new Instruction("SWAP C", 1, 8, &CentralProcessingUnit::instruction_Swap)));
+    instructionSet.insert(std::make_pair(0x131, new Instruction("SWAP D", 1, 8, &CentralProcessingUnit::instruction_Swap)));
+    instructionSet.insert(std::make_pair(0x132, new Instruction("SWAP E", 1, 8, &CentralProcessingUnit::instruction_Swap)));
+    instructionSet.insert(std::make_pair(0x133, new Instruction("SWAP H", 1, 8, &CentralProcessingUnit::instruction_Swap)));
+    instructionSet.insert(std::make_pair(0x134, new Instruction("SWAP L", 1, 8, &CentralProcessingUnit::instruction_Swap)));
+    instructionSet.insert(std::make_pair(0x135, new Instruction("SWAP (HL)", 1, 16, &CentralProcessingUnit::instruction_Swap)));
+    instructionSet.insert(std::make_pair(0x136, new Instruction("SWAP A", 1, 8, &CentralProcessingUnit::instruction_Swap)));
+
+    instructionSet.insert(std::make_pair(0xc7, new Instruction("RST 00h", 1, 16, &CentralProcessingUnit::instruction_Reset)));
+    instructionSet.insert(std::make_pair(0xcf, new Instruction("RST 08h", 1, 16, &CentralProcessingUnit::instruction_Reset)));
+    instructionSet.insert(std::make_pair(0xd7, new Instruction("RST 10h", 1, 16, &CentralProcessingUnit::instruction_Reset)));
+    instructionSet.insert(std::make_pair(0xdf, new Instruction("RST 18h", 1, 16, &CentralProcessingUnit::instruction_Reset)));
+    instructionSet.insert(std::make_pair(0xe7, new Instruction("RST 20h", 1, 16, &CentralProcessingUnit::instruction_Reset)));
+    instructionSet.insert(std::make_pair(0xef, new Instruction("RST 28h", 1, 16, &CentralProcessingUnit::instruction_Reset)));
+    instructionSet.insert(std::make_pair(0xf7, new Instruction("RST 30h", 1, 16, &CentralProcessingUnit::instruction_Reset)));
+    instructionSet.insert(std::make_pair(0xff, new Instruction("RST 38h", 1, 16, &CentralProcessingUnit::instruction_Reset)));
+
+    instructionSet.insert(std::make_pair(0x09, new Instruction("ADD HL, BC", 1, 8, &CentralProcessingUnit::instruction_AddPair)));
+    instructionSet.insert(std::make_pair(0x19, new Instruction("ADD HL, DE", 1, 8, &CentralProcessingUnit::instruction_AddPair)));
+    instructionSet.insert(std::make_pair(0x29, new Instruction("ADD HL, HL", 1, 8, &CentralProcessingUnit::instruction_AddPair)));
+
+    instructionSet.insert(std::make_pair(0xe9, new Instruction("JP HL", 1, 4, &CentralProcessingUnit::instruction_JumpHL)));
+
+    instructionSet.insert(std::make_pair(0x17f, new Instruction("RES 0,B", 1, 8, &CentralProcessingUnit::instruction_ResetBit0)));
+    instructionSet.insert(std::make_pair(0x180, new Instruction("RES 0,C", 1, 8, &CentralProcessingUnit::instruction_ResetBit0)));
+    instructionSet.insert(std::make_pair(0x181, new Instruction("RES 0,D", 1, 8, &CentralProcessingUnit::instruction_ResetBit0)));
+    instructionSet.insert(std::make_pair(0x182, new Instruction("RES 0,E", 1, 8, &CentralProcessingUnit::instruction_ResetBit0)));
+    instructionSet.insert(std::make_pair(0x183, new Instruction("RES 0,H", 1, 8, &CentralProcessingUnit::instruction_ResetBit0)));
+    instructionSet.insert(std::make_pair(0x184, new Instruction("RES 0,L", 1, 8, &CentralProcessingUnit::instruction_ResetBit0)));
+    instructionSet.insert(std::make_pair(0x185, new Instruction("RES 0,(HL)", 1, 16, &CentralProcessingUnit::instruction_ResetBit0)));
+    instructionSet.insert(std::make_pair(0x186, new Instruction("RES 0,A", 1, 8, &CentralProcessingUnit::instruction_ResetBit0)));
+
 }
 
 CentralProcessingUnit::~CentralProcessingUnit() {
@@ -362,7 +408,7 @@ CentralProcessingUnit::~CentralProcessingUnit() {
 uint8_t CentralProcessingUnit::getFlags() {
 	uint8_t val = 0;
 	val |= (this->isZero << 7);
-	val |= (this->isSubstract << 6);
+	val |= (this->isSubtract << 6);
 	val |= (this->isHalfCarry << 5);
 	val |= (this->isCarry << 4);
 	return val;
@@ -370,7 +416,7 @@ uint8_t CentralProcessingUnit::getFlags() {
 
 void CentralProcessingUnit::setFlags(uint8_t val) {
 	this->isZero        = (val >> 7) & 1;
-	this->isSubstract   = (val >> 6) & 1;
+	this->isSubtract   = (val >> 6) & 1;
 	this->isHalfCarry   = (val >> 5) & 1;
 	this->isCarry       = (val >> 4) & 1;
 }
@@ -384,7 +430,7 @@ void CentralProcessingUnit::Print() {
 	printf("├───────────────┼───────────────┤\n");
 	printf("│ sp = %04x\t│ pc = %04x\t│\n", stackPointer, ProgramCounter);
 	printf("├───────────────┼───────────────┤\n");
-	printf("│ zero = %u\t│ subtract = %u\t│\n", isZero, isSubstract);
+	printf("│ zero = %u\t│ subtract = %u\t│\n", isZero, isSubtract);
 	printf("│ carry = %u\t│ hcarry = %u\t│\n", isCarry, isHalfCarry);
 	printf("└───────────────┴───────────────┘\n");
 }
@@ -392,6 +438,8 @@ void CentralProcessingUnit::Print() {
 uint8_t CentralProcessingUnit::ExecuteInstruction(uint16_t skipDebug) {
     bool debug = (this->ProgramCounter > skipDebug);
     this->deltaTime = 0;
+
+    handleInterrupts();
 
     if(!isHalted) {
         uint16_t opcode = mmu->Read(this->ProgramCounter);
@@ -411,7 +459,7 @@ uint8_t CentralProcessingUnit::ExecuteInstruction(uint16_t skipDebug) {
         if (it != instructionSet.end()) {
             Instruction *inst = it->second;
             if(debug) printf("Name: %s, ", inst->name.c_str());
-            uint8_t *data = (uint8_t*) malloc(inst->size * sizeof(uint8_t));
+            uint8_t data[inst->size];
             if(debug) printf("Data: ");
             for (size_t i = 0; i < inst->size; i++) {
                 data[i] = mmu->Read(this->ProgramCounter + i);
@@ -430,8 +478,7 @@ uint8_t CentralProcessingUnit::ExecuteInstruction(uint16_t skipDebug) {
         }
     }
 
-    handleInterrupts();
-    // if(debug) Print();
+    if(debug) Print();
 
     return this->deltaTime;
 }
@@ -537,7 +584,7 @@ bool CentralProcessingUnit::instruction_XOROP(uint8_t* data) {
     // xor a and data and put it in a
     this->accumulator ^= d;
     this->isZero = (this->accumulator == 0);
-    this->isCarry = this->isHalfCarry = this->isSubstract = 0;
+    this->isCarry = this->isHalfCarry = this->isSubtract = 0;
     return true;
 }
 
@@ -609,12 +656,12 @@ bool CentralProcessingUnit::instruction_BIT7(uint8_t* data) {
         uint8_t val = mmu->Read(addr);
         this->isZero = (val & (1 << 7)) == 0;
         this->isHalfCarry = 1;
-        this->isSubstract = 0;
+        this->isSubtract = 0;
         return true;
     }
     this->isZero = ((*reg) & (1 << 7)) == 0;
     this->isHalfCarry = 1;
-    this->isSubstract = 0;
+    this->isSubtract = 0;
     return true;
 }
 
@@ -680,7 +727,7 @@ bool CentralProcessingUnit::instruction_Inc(uint8_t* data) {
         this->isHalfCarry = ((val & 0xf) == 1);
         val++;
         this->isZero = (val == 0);
-        this->isSubstract = 0;
+        this->isSubtract = 0;
         mmu->Write(addr, val);
         return true;
     }
@@ -688,7 +735,7 @@ bool CentralProcessingUnit::instruction_Inc(uint8_t* data) {
     this->isHalfCarry = (((*reg) & 0xf) == 1);
     (*reg)++;
     this->isZero = (*reg == 0);
-    this->isSubstract = 0;
+    this->isSubtract = 0;
     return true;
 }
 
@@ -714,7 +761,7 @@ bool CentralProcessingUnit::instruction_Dec(uint8_t* data) {
         this->isHalfCarry = ((val & 0xf) == 1);
         val--;
         this->isZero = (val == 0);
-        this->isSubstract = 1;
+        this->isSubtract = 1;
         mmu->Write(addr, val);
         return true;
     }
@@ -722,7 +769,7 @@ bool CentralProcessingUnit::instruction_Dec(uint8_t* data) {
     this->isHalfCarry = (((*reg) & 0xf) == 0);
     (*reg)--;
     this->isZero = (*reg == 0);
-    this->isSubstract = 1;
+    this->isSubtract = 1;
     return true;
 }
 
@@ -1013,7 +1060,7 @@ bool CentralProcessingUnit::instruction_Compare(uint8_t* data) {
 
     uint8_t val = this->accumulator - n;
     this->isZero = (val == 0);
-    this->isSubstract = true;
+    this->isSubtract = true;
     this->isHalfCarry = ((val & 0xf) > ((accumulator) & 0xf));
     this->isCarry = (this->accumulator < n);
     return true;
@@ -1048,7 +1095,7 @@ bool CentralProcessingUnit::instruction_Sub(uint8_t* data) {
         d = data[1];
 
     this->isZero = (this->accumulator == d);
-    this->isSubstract = 1;
+    this->isSubtract = 1;
     this->isCarry = (this->accumulator < d);
     this->isHalfCarry = (this->accumulator & 0xf) < (d & 0xf);
     this->accumulator = this->accumulator - d;
@@ -1085,7 +1132,7 @@ bool CentralProcessingUnit::instruction_Add(uint8_t* data) {
     this->isCarry = (val >> 8) & 1;
     uint8_t half = (this->accumulator & 0xf) + (d & 0xf);
     this->isHalfCarry = (half >> 4) & 1;
-    this->isSubstract = 0;
+    this->isSubtract = 0;
 
     this->accumulator += d;
     return true;
@@ -1120,5 +1167,247 @@ bool CentralProcessingUnit::instruction_SetInterrupt(uint8_t* data) {
         this->interruptMasterFlag = true;
     else if (data[0] == 0xf3)
         this->interruptMasterFlag = false;
+    return true;
+}
+
+bool CentralProcessingUnit::instruction_LoadAHL(uint8_t* data) {
+    uint16_t addr = this->h;
+    addr = (addr << 8) | this->l;
+    this->accumulator = mmu->Read(addr);
+    addr++;
+    this->h = (addr >> 8) & 0xff;
+    this->l = addr & 0xff;
+    return true;
+}
+
+bool CentralProcessingUnit::instruction_OR(uint8_t* data) {
+    uint8_t d;
+    if (data[0] == 0xb7)
+        d = this->accumulator;
+    else if (data[0] == 0xb0)
+        d = this->b;
+    else if (data[0] == 0xb1)
+        d = this->c;
+    else if (data[0] == 0xb2)
+        d = this->d;
+    else if (data[0] == 0xb3)
+        d = this->e;
+    else if (data[0] == 0xb4)
+        d = this->h;
+    else if (data[0] == 0xb5)
+        d = this->l;
+    else if (data[0] == 0xb6) {
+        uint16_t addr = this->h;
+        addr = (addr << 8) | this->l;
+        d = mmu->Read(addr);
+    } else if (data[0] == 0xf6)
+        d = data[1];
+
+    this->accumulator |= d;
+    this->isZero = (this->accumulator == 0);
+    this->isCarry = this->isHalfCarry = this->isSubtract = 0;
+    return true;
+}
+
+bool CentralProcessingUnit::instruction_AND(uint8_t* data) {
+    uint8_t d;
+    if (data[0] == 0xa7)
+        d = this->accumulator;
+    else if (data[0] == 0xa0)
+        d = this->b;
+    else if (data[0] == 0xa1)
+        d = this->c;
+    else if (data[0] == 0xa2)
+        d = this->d;
+    else if (data[0] == 0xa3)
+        d = this->e;
+    else if (data[0] == 0xa4)
+        d = this->h;
+    else if (data[0] == 0xa5)
+        d = this->l;
+    else if (data[0] == 0xa6) {
+        uint16_t addr = this->h;
+        addr = (addr << 8) | this->l;
+        d = mmu->Read(addr);
+    } else if (data[0] == 0xe6)
+        d = data[1];
+
+    this->accumulator &= d;
+    this->isZero = (this->accumulator == 0);
+    this->isHalfCarry = 1;
+    this->isCarry = this->isSubtract = 0;
+    return 1;
+}
+
+bool CentralProcessingUnit::instruction_SRL(uint8_t* data) {
+    uint8_t* reg;
+    if (data[0] == 0x38)
+        reg = &(this->b);
+    else if (data[0] == 0x39)
+        reg = &(this->c);
+    else if (data[0] == 0x3a)
+        reg = &(this->d);
+    else if (data[0] == 0x3b)
+        reg = &(this->e);
+    else if (data[0] == 0x3c)
+        reg = &(this->h);
+    else if (data[0] == 0x3d)
+        reg = &(this->l);
+    else if (data[0] == 0x3e) {
+        uint16_t addr = this->h;
+        addr = (addr << 8) | this->l;
+        uint8_t val = mmu->Read(addr);
+        this->isCarry = val & 1;
+        val >>= 1;
+        mmu->Write(addr, val);
+        this->isZero = (val == 0);
+        this->isHalfCarry = this->isSubtract = 0;
+        return true;
+    } else if (data[0] == 0x3f)
+        reg = &(this->accumulator);
+
+    this->isHalfCarry = this->isSubtract = 0;
+    uint8_t val = (*reg) >> 1;
+    this->isZero = (val == 0);
+    this->isCarry = (*reg) & 1;
+    *reg = val;
+    return true;
+}
+
+bool CentralProcessingUnit::instruction_Reti(uint8_t* data) {
+    uint16_t lo = mmu->Read(this->stackPointer);
+    uint16_t hi = mmu->Read(this->stackPointer + 1);
+    this->stackPointer += 2;
+    this->ProgramCounter = (hi << 8) | lo;
+    this->interruptMasterFlag = true;
+    this->deltaTime = 16;
+    return false;
+}
+
+bool CentralProcessingUnit::instruction_CPL(uint8_t* data) {
+    this->accumulator = ~(this->accumulator);
+    this->isSubtract = this->isHalfCarry = true;
+    return true;
+}
+
+bool CentralProcessingUnit::instruction_Swap(uint8_t* data) {
+    this->isSubtract = this->isHalfCarry = this->isCarry = 0;
+    uint8_t* reg;
+    if (data[0] == 0x37)
+        reg = &(this->accumulator);
+    else if (data[0] == 0x30)
+        reg = &(this->b);
+    else if (data[0] == 0x31)
+        reg = &(this->c);
+    else if (data[0] == 0x32)
+        reg = &(this->d);
+    else if (data[0] == 0x33)
+        reg = &(this->e);
+    else if (data[0] == 0x34)
+        reg = &(this->h);
+    else if (data[0] == 0x35)
+        reg = &(this->l);
+    else if (data[0] == 0x36) {
+        uint16_t addr = this->h;
+        addr = (addr << 8) | this->l;
+        uint8_t data = mmu->Read(addr);
+        uint8_t val = (data >> 4);
+        val |= (data << 4);
+        mmu->Write(addr, val);
+        this->isZero = (val == 0);
+        return true;
+    }
+
+    uint8_t val = (*reg) >> 4;
+    val |= ((*reg) << 4);
+    *reg = val;
+    this->isZero = (val == 0);
+    return true;
+}
+
+bool CentralProcessingUnit::instruction_Reset(uint8_t* data) {
+    this->deltaTime = 16;
+    uint16_t val = this->ProgramCounter + 1;
+    uint8_t lo =  val & 0xff;
+    uint8_t hi = (val >> 8) & 0xff;
+    this->stackPointer--;
+    mmu->Write(this->stackPointer, hi);
+    this->stackPointer--;
+    mmu->Write(this->stackPointer, lo);
+
+    if (data[0] == 0xc7)
+        this->ProgramCounter = 0;
+    else if (data[0] == 0xcf)
+        this->ProgramCounter = 0x08;
+    else if (data[0] == 0xd7)
+        this->ProgramCounter = 0x10;
+    else if (data[0] == 0xdf)
+        this->ProgramCounter = 0x18;
+    else if (data[0] == 0xe7)
+        this->ProgramCounter = 0x20;
+    else if (data[0] == 0xef)
+        this->ProgramCounter = 0x28;
+    else if (data[0] == 0xf7)
+        this->ProgramCounter = 0x30;
+    else if (data[0] == 0xff)
+        this->ProgramCounter = 0x38;
+
+    return false;
+}
+
+bool CentralProcessingUnit::instruction_AddPair(uint8_t* data) {
+    uint16_t hi, lo;
+    if (data[0] == 0x09)
+        hi = this->b, lo = this->c;
+    else if (data[0] == 0x19)
+        hi = this->d, lo = this->e;
+    else if (data[0] == 0x29)
+        hi = this->h, lo = this->l;
+    else if (data[0] == 0x39)
+        hi = (this->stackPointer) >> 8, lo = (this->stackPointer) & 0xff;
+
+    uint16_t val = (hi << 8) | lo;
+    uint16_t hl = (((uint16_t)(this->h)) << 8) | this->l;
+    this->isSubtract = 0;
+    this->isHalfCarry = (((val & 0xfff) + (hl & 0xfff)) >> 12) & 1; // set if carry from bit 11
+    this->isCarry = (((uint32_t)val + hl) >> 16) & 1; // set if carry from bit 15
+    uint16_t ans = val + hl;
+    this->h = ans >> 8;
+    this->l = ans & 0xff;
+    return true;
+}
+
+bool CentralProcessingUnit::instruction_JumpHL(uint8_t* data) {
+    uint16_t addr = this->h;
+    addr = (addr << 8) | this->l;
+    this->ProgramCounter = addr;
+    return false;
+}
+
+bool CentralProcessingUnit::instruction_ResetBit0(uint8_t* data) {
+    uint8_t* reg;
+    if (data[0] == 0x80)
+        reg = &(this->b);
+    else if (data[0] == 0x81)
+        reg = &(this->c);
+    else if (data[0] == 0x82)
+        reg = &(this->d);
+    else if (data[0] == 0x83)
+        reg = &(this->e);
+    else if (data[0] == 0x84)
+        reg = &(this->h);
+    else if (data[0] == 0x85)
+        reg = &(this->l);
+    else if (data[0] == 0x86) {
+        uint16_t addr = this->h;
+        addr = (addr << 8) | this->l;
+        uint8_t val = mmu->Read(addr);
+        val ^= 1;
+        mmu->Write(addr, val);
+        return true;
+    } else if (data[0] == 0x87)
+        reg = &(this->accumulator);
+
+    (*reg) ^= 1;
     return true;
 }

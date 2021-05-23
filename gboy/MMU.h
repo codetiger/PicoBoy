@@ -17,13 +17,11 @@ private:
     void LoadDMA(uint8_t value);
 
     Cartridge *cartridge;
-    std::vector<uint8_t> memory;
+    uint8_t memory[0x10000];
 };
 
 MemoryManagementUnit::MemoryManagementUnit(Cartridge* cart) {
-    printf("Creating Memory for MMU\n");
     cartridge = cart;
-    memory = std::vector<uint8_t>(0x10000);
     loadBIOS();
 }
 
@@ -41,7 +39,7 @@ uint8_t MemoryManagementUnit::Read(uint16_t addr) {
         printf("Reading from: 0x%04x\n", addr);
         return memory[addr]; // External Cartridge RAM
     } else if(0xC000 <= addr && addr <= 0xDFFF) {
-        printf("Reading from: 0x%04x\n", addr);
+        // printf("Reading from: 0x%04x\n", addr);
         return memory[addr]; // Internal Work RAM
     } else if(0xE000 <= addr && addr <= 0xFDFF) {
         printf("Reading from: 0x%04x\n", addr);
@@ -57,7 +55,7 @@ uint8_t MemoryManagementUnit::Read(uint16_t addr) {
     } else if(0xFF80 <= addr && addr <= 0xFFFE) {
         return memory[addr]; // Zero Page RAM
     } else if(addr == 0xFFFF) {
-        printf("Reading from: 0x%04x\n", addr);
+        // printf("Reading from: 0x%04x\n", addr);
         return memory[addr]; // Interrupt Enable Register
     } 
     
@@ -70,7 +68,7 @@ void MemoryManagementUnit::Write(uint16_t addr, uint8_t data) {
         printf("Loading DMA\n");
         LoadDMA(data);
     } else if(addr < 0x8000 || (addr >= 0xfea0 && addr < 0xfeff)) {
-        printf("Attempting to write to Cartridge\n");
+        printf("Attempting to write to readonly: 0x%04x\n", addr);
         return; // Read only area
     } else if(0x8000 <= addr && addr <= 0x9FFF) {
         // printf("Writing to: 0x%04x\n", addr);
@@ -96,8 +94,8 @@ void MemoryManagementUnit::loadBIOS() {
     biosFile.read((char*)&bios[0], 256);
     biosFile.close();
 
-    printf("Loading BIOS Data to MMU\n");
-    memcpy(&memory[0x0], &bios[0], sizeof(bios));
+    memcpy(&memory, &bios, sizeof(bios));
+    printf("Loaded BIOS Data to MMU\n");
 }
 
 bool MemoryManagementUnit::ReadIORegisterBit(uint16_t addr, uint8_t flag) { 
