@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 
 #include <SDL.h>
 #include <SDL_timer.h>
@@ -11,7 +12,10 @@ int main(int argc, char *argv[]){
     SDL_Window *window;
     const uint8_t scale = 2;
 
-    GBoy *gb = new GBoy("./roms/tetris.gb");
+    std::string romPath = "./roms/tetris.gb";
+    if(argc >= 2)
+        romPath = argv[1];
+    GBoy *gb = new GBoy(romPath);
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         printf("error initializing SDL: %s\n", SDL_GetError());
