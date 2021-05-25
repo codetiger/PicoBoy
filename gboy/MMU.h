@@ -29,53 +29,30 @@ uint8_t MemoryManagementUnit::Read(uint16_t addr) {
     if (addr <= 0x7FFF) {
         if (addr <= 0xFF && memory[0xFF50] != 0x1)
             return memory[addr];
-
-        // printf("Reading Cartridge: 0x%04x Data: 0x%02x\n", addr, cartridge->Read(addr));
         return cartridge->Read(addr);
-    } else if(0x8000 <= addr && addr <= 0x9FFF) {
-        // printf("Reading from: 0x%04x\n", addr);
-        return memory[addr]; // VRAM
-    } else if(0xA000 <= addr && addr <= 0xBFFF) {
-        printf("Reading from: 0x%04x\n", addr);
-        return memory[addr]; // External Cartridge RAM
-    } else if(0xC000 <= addr && addr <= 0xDFFF) {
-        // printf("Reading from: 0x%04x\n", addr);
-        return memory[addr]; // Internal Work RAM
     } else if(0xE000 <= addr && addr <= 0xFDFF) {
         printf("Reading from: 0x%04x\n", addr);
         return memory[addr-0x2000]; // Mirrored Work RAM
-    } else if(0xFE00 <= addr && addr <= 0xFE9F) {
-        printf("Reading from: 0x%04x\n", addr);
-        return memory[addr]; // OAM
     } else if(0xFEA0 <= addr && addr <= 0xFEFF) {
         printf("Reading from: 0x%04x\n", addr);
         return 0xFF; // Unusable
-    } else if(0xFF00 <= addr && addr <= 0xFF7F) {
-        return memory[addr]; // Mapped IO
-    } else if(0xFF80 <= addr && addr <= 0xFFFE) {
-        return memory[addr]; // Zero Page RAM
-    } else if(addr == 0xFFFF) {
-        // printf("Reading from: 0x%04x\n", addr);
-        return memory[addr]; // Interrupt Enable Register
-    } 
-    
-    printf("Attempting to read from unmapped memory location\n");
-    return 0x0;
+    } else
+        return memory[addr];
 }
 
 void MemoryManagementUnit::Write(uint16_t addr, uint8_t data) {
     if (addr == AddrRegDma) {
-        // printf("Loading DMA\n");
         LoadDMA(data);
     } else if(addr < 0x8000 || (addr >= 0xfea0 && addr < 0xfeff)) {
-        // printf("Attempting to write to readonly: 0x%04x\n", addr);
         return; // Read only area
     } else if(0x8000 <= addr && addr <= 0x9FFF) {
-        // printf("Writing to: 0x%04x\n", addr);
         memory[addr] = data; // VRAM
     } else if(addr >= 0xe000 && addr < 0xfe00) {
         memory[addr] = data;
         memory[addr - 0x2000] = data; //echo RAM
+    } else if(addr == 0xFF01) {
+        memory[addr] = data;
+        printf("%c", data); // Serial port
     } else {
         if(addr == 0xFF50)
             printf("Disabling boot procedure\n");
