@@ -133,7 +133,7 @@ CentralProcessingUnit::CentralProcessingUnit(MemoryManagementUnit *mmu) {
     this->time = this->deltaTime = 0;
     this->interruptMasterFlag = false;
     this->accumulator = b = c = d = e = h = l = 0;
-    const std::string regName[] = {"B", "C", "D", "E", "H", "L", "(HL)", "A"};
+    const std::string regName[8] = {"B", "C", "D", "E", "H", "L", "(HL)", "A"};
 
     instructionSet[0x0] = new Instruction("NOP", 1, 4, &CentralProcessingUnit::instruction_NOP);
     instructionSet[0xcb] = new Instruction("Extended Instruction", 1, 4, &CentralProcessingUnit::instruction_NOP);
@@ -626,10 +626,10 @@ void CentralProcessingUnit::instruction_Inc(uint8_t* data) {
         uint16_t addr = (((uint16_t)this->h)<<8) | (this->l);
         uint8_t val = mmu->Read(addr);
         val++;
-        this->isHalfCarry = ((val & 0xf) == 1);
-        this->isZero = (val == 0);
-        this->isSubtract = 0;
         mmu->Write(addr, val);
+        this->isZero = (val == 0);
+        this->isHalfCarry = ((val & 0xf) == 0);
+        this->isSubtract = false;
         return;
     } else if (data[0] == 0x3c)
         reg = &(this->accumulator);
@@ -637,7 +637,7 @@ void CentralProcessingUnit::instruction_Inc(uint8_t* data) {
     (*reg)++;
     this->isHalfCarry = (((*reg) & 0xf) == 0);
     this->isZero = (*reg) == 0;
-    this->isSubtract = 0;
+    this->isSubtract = false;
 }
 
 void CentralProcessingUnit::instruction_Dec(uint8_t* data) {
@@ -1448,7 +1448,7 @@ void CentralProcessingUnit::instruction_RollLeftCarry(uint8_t* data) {
         val = static_cast<uint8_t>((val << 1) | truncated_bit);
 
         this->isCarry = carry_flag;
-        this->isZero = (*reg) == 0;
+        this->isZero = val == 0;
         this->isHalfCarry = false;
         this->isSubtract = false;
         mmu->Write(addr, val);
@@ -1467,7 +1467,7 @@ void CentralProcessingUnit::instruction_RollLeftCarry(uint8_t* data) {
 }
 
 void CentralProcessingUnit::instruction_RollRightCarryA(uint8_t* data) {
-    this->instruction_RollRightCarryA(data);
+    this->instruction_RollRightCarry(data);
     this->isZero = false;
 }
 
@@ -1492,7 +1492,7 @@ void CentralProcessingUnit::instruction_RollRightCarry(uint8_t* data) {
 
         uint8_t carry_flag = check_bit(val, 0);
         uint8_t truncated_bit = check_bit(val, 0);
-        val = (((val) >> 1) | (truncated_bit << 7));
+        val = static_cast<uint8_t>((val >> 1) | (truncated_bit << 7));
 
         this->isCarry = carry_flag;
         this->isZero = (val == 0);
@@ -1605,6 +1605,7 @@ void CentralProcessingUnit::instruction_SLA(uint8_t* data) {
         this->isHalfCarry = false;
         this->isCarry = carry_bit;
         mmu->Write(addr, result);
+        return;
     } else if (data[0] == 0x27)
         reg = &this->accumulator;
 
@@ -1635,13 +1636,19 @@ void CentralProcessingUnit::instruction_SRA(uint8_t* data) {
         uint16_t addr = this->h;
         addr = (addr << 8) | this->l;
         uint8_t d = mmu->Read(addr);
-        uint8_t carry_bit = check_bit(d, 7);
-        uint8_t result = static_cast<uint8_t>(d << 1);
+        uint8_t carry_bit = check_bit(d, 0);
+        uint8_t top_bit = check_bit(d, 7);
+        uint8_t result = static_cast<uint8_t>(d >> 1);
+        if(top_bit)
+            result |= (1 << 7);
+        else
+            result &= ~(1 << 7);
         this->isZero = (result == 0);
         this->isSubtract = false;
         this->isHalfCarry = false;
         this->isCarry = carry_bit;
         mmu->Write(addr, result);
+        return;
     } else if (data[0] == 0x2f)
         reg = &this->accumulator;
 

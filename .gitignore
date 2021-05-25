@@ -39,5 +39,6 @@ CMakeFiles/
 Makefile
 build/
 .vscode
+.gdbinit
 picoboy
 roms/
