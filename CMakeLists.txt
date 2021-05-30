@@ -9,5 +9,12 @@ find_package(SDL2 REQUIRED)
 include_directories(SDL2Test ${SDL2_INCLUDE_DIRS})
 
 include_directories(. gboy/)
-add_executable(picoboy picoboy.cpp)
+add_executable(picoboy 
+    picoboy.cpp 
+    gboy/GBoy.cc 
+    gboy/Cartridge.cc 
+    gboy/CPU.cc 
+    gboy/MMU.cc 
+    gboy/PPU.cc 
+    gboy/Timer.cc)
 target_link_libraries(picoboy ${SDL2_LIBRARIES})
