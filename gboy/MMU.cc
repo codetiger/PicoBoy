@@ -20,16 +20,24 @@ uint8_t MemoryManagementUnit::Read(uint16_t addr) {
         return memory[addr];
 }
 
-void MemoryManagementUnit::Write(uint16_t addr, uint8_t data) {
-    if (addr == AddrRegDma) {
+void MemoryManagementUnit::Write(uint16_t addr, uint8_t data, bool isPPUWrite) {
+    if (addr < 0x8000) {
+        return;
+    } else if (addr == AddrRegDma) {
+        memory[addr] = data;
         LoadDMA(data);
-    } else if(addr < 0x8000 || (addr >= 0xfea0 && addr < 0xfeff)) {
+    } else if (addr == AddrRegLcdControl) {
+        memory[addr] = data;
+        // printf("LCD Control: %d\n", data);
+    } else if(addr >= 0xfea0 && addr < 0xfeff) {
         return; // Read only area
     } else if(0x8000 <= addr && addr <= 0x9FFF) {
         memory[addr] = data; // VRAM
     } else if(addr >= 0xe000 && addr < 0xfe00) {
         memory[addr] = data;
         memory[addr - 0x2000] = data; //echo RAM
+    } else if(addr == 0xFF44) {
+        memory[addr] = isPPUWrite ? data : 0x0;
     } else if(addr == 0xFF01) {
         memory[addr] = data;
         printf("%c", data); // Serial port
@@ -56,18 +64,18 @@ void MemoryManagementUnit::loadBIOS() {
 }
 
 bool MemoryManagementUnit::ReadIORegisterBit(uint16_t addr, uint8_t flag) { 
-    return memory[addr] & flag; 
+    return (memory[addr] >> flag) & 0x1;
 }
 
 void MemoryManagementUnit::WriteIORegisterBit(uint16_t addr, uint8_t flag, bool value) { 
     if(value) 
-        memory[addr] |= flag;
+        memory[addr] |= (1 << flag);
     else 
-        memory[addr] &= ~flag;
+        memory[addr] &= ~(1 << flag);
 }
 
 void MemoryManagementUnit::LoadDMA(uint8_t value) {
-    uint16_t addr = value * 0x0100;
-	for (int i = 0x0; i < 0xa0; i++)
+    uint16_t addr = ((uint16_t)value) << 8;
+	for (int i = 0x0; i <= 0x9f; i++)
         memory[0xfe00 + i] = memory[addr + i];
 }

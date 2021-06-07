@@ -16,5 +16,6 @@ add_executable(picoboy
     gboy/CPU.cc 
     gboy/MMU.cc 
     gboy/PPU.cc 
+    gboy/Tile.cc 
     gboy/Timer.cc)
 target_link_libraries(picoboy ${SDL2_LIBRARIES})

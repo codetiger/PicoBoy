@@ -11,6 +11,7 @@ private:
     uint16_t stackPointer;
     uint16_t time, deltaTime;
     bool interruptMasterFlag;
+	uint16_t programCounter;
 
     bool isZero, isSubtract, isCarry, isHalfCarry;
     bool isHalted;
@@ -33,8 +34,7 @@ private:
 
     std::map<uint16_t, Instruction*> instructionSet;
     std::map<uint16_t, Instruction*> instructionSetExtended;
-
-    uint8_t data[16];
+    uint8_t data[8];
 
     uint8_t getFlags();
     void setFlags(uint8_t val);
@@ -43,6 +43,9 @@ private:
     void stackPush(uint8_t hi, uint8_t lo);
     uint16_t stackPop();
     uint8_t readMemoryFromProgramCounter();
+    void setHL(uint16_t addr);
+    uint16_t getHL();
+    uint16_t stitch(uint8_t hi, uint8_t lo);
 
     void instruction_NOP(uint8_t* data);
     void instruction_XOROP(uint8_t* data);
@@ -60,6 +63,8 @@ private:
     void instruction_LoadAIndirect(uint8_t* data);
     void instruction_LoadA2Mem(uint8_t* data);
     void instruction_LoadReg2Reg(uint8_t* data);
+    void instruction_LoadAHL(uint8_t* data);
+    void instruction_LoadHL(uint8_t* data);
 
     void instruction_JR(uint8_t* data);
     void instruction_Call(uint8_t* data);
@@ -75,8 +80,6 @@ private:
     void instruction_Add(uint8_t* data);
     void instruction_Adc(uint8_t* data);
     void instruction_Jump(uint8_t* data);
-    void instruction_LoadAHL(uint8_t* data);
-    void instruction_LoadHL(uint8_t* data);
     void instruction_JumpHL(uint8_t* data);
 
     void instruction_OR(uint8_t* data);
@@ -115,8 +118,6 @@ private:
     void serviceInterrupts(uint16_t addr, uint8_t flag);
 
 public:
-	uint16_t ProgramCounter;
-
     CentralProcessingUnit(MemoryManagementUnit *mmu);
     ~CentralProcessingUnit();
     void Print();

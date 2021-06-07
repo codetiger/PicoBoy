@@ -20,3 +20,6 @@ public:
     ~Timer();
     void Cycle(uint8_t cycles);
 };
+
+const uint8_t FlagTimerClockMode = 3;
+const uint8_t FlagTimerStart = 4;
