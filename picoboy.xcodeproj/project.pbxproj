@@ -1,0 +1,688 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 54;
+	objects = {
+
+/* Begin PBXAggregateTarget section */
+		D10D4FC8EC2D4D42933A2C70 /* ZERO_CHECK */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = F9527C2ABFF845309289CF02 /* Build configuration list for PBXAggregateTarget "ZERO_CHECK" */;
+			buildPhases = (
+				33E5E4C7D16656A4AFECCB5B /* Generate CMakeFiles/ZERO_CHECK */,
+			);
+			dependencies = (
+			);
+			name = ZERO_CHECK;
+			productName = ZERO_CHECK;
+		};
+		E30FBDB5CFA84A069C51A61F /* ALL_BUILD */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 2897B8C8E5F64337BB01F479 /* Build configuration list for PBXAggregateTarget "ALL_BUILD" */;
+			buildPhases = (
+				1FF0C9202B4D4B3E2A6419E2 /* Generate CMakeFiles/ALL_BUILD */,
+			);
+			dependencies = (
+				9B5A42C6204F4BF4BA2A93E9 /* PBXTargetDependency */,
+				A1EDA7F764DD414E9AEFBA67 /* PBXTargetDependency */,
+			);
+			name = ALL_BUILD;
+			productName = ALL_BUILD;
+		};
+/* End PBXAggregateTarget section */
+
+/* Begin PBXBuildFile section */
+		378A29DAA8DB4028A3A2BDC0 /* PPU.cc in Sources */ = {isa = PBXBuildFile; fileRef = A50CA72E6F60409EA5530C5B /* PPU.cc */; };
+		930B8F3F2F924502904DA993 /* Tile.cc in Sources */ = {isa = PBXBuildFile; fileRef = FE92AE9A9B584953B0E1DE54 /* Tile.cc */; };
+		95FE8FC4729546B3AF026539 /* Timer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 85FC5D579BA84765A56C9E53 /* Timer.cc */; };
+		A4FE83B41E694A99AE2B1E54 /* GBoy.cc in Sources */ = {isa = PBXBuildFile; fileRef = C4F120D2DA114A4FBBA3949C /* GBoy.cc */; };
+		A97665556A10496FAA63345D /* CPU.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2AD72C494F85432F805F3D6F /* CPU.cc */; };
+		BD0B2FC31E66461B90CB6DDD /* MMU.cc in Sources */ = {isa = PBXBuildFile; fileRef = 5176A4D0226542EE990604AA /* MMU.cc */; };
+		CF3711B72FF848E9B88FD465 /* Cartridge.cc in Sources */ = {isa = PBXBuildFile; fileRef = C721A02E80DB41D08D67E206 /* Cartridge.cc */; };
+		D084B4DD49A84869983E0387 /* picoboy.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 020A3BCEEB8E4F138B49A60B /* picoboy.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		67376A0FF4224EC8887C7CD7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 37F4314EF14442D391298AEA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D10D4FC8EC2D4D42933A2C70;
+			remoteInfo = ZERO_CHECK;
+		};
+		6CC5EF101669451C91AEF186 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 37F4314EF14442D391298AEA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 35C77BCF631B4878A25F5985;
+			remoteInfo = picoboy;
+		};
+		D4576707FE78412B91B57DD2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 37F4314EF14442D391298AEA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D10D4FC8EC2D4D42933A2C70;
+			remoteInfo = ZERO_CHECK;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		020A3BCEEB8E4F138B49A60B /* picoboy.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; path = picoboy.cpp; sourceTree = SOURCE_ROOT; };
+		2AD72C494F85432F805F3D6F /* CPU.cc */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = CPU.cc; path = gboy/CPU.cc; sourceTree = SOURCE_ROOT; };
+		4ED12C002692C3E7006A40A4 /* Cartridge.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Cartridge.h; path = gboy/Cartridge.h; sourceTree = "<group>"; };
+		4ED12C012692C3E7006A40A4 /* GBoy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GBoy.h; path = gboy/GBoy.h; sourceTree = "<group>"; };
+		4ED12C022692C3E7006A40A4 /* CPU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CPU.h; path = gboy/CPU.h; sourceTree = "<group>"; };
+		4ED12C032692C3E7006A40A4 /* Timer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Timer.h; path = gboy/Timer.h; sourceTree = "<group>"; };
+		4ED12C042692C3E7006A40A4 /* PPU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PPU.h; path = gboy/PPU.h; sourceTree = "<group>"; };
+		4ED12C052692C3E7006A40A4 /* Tile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Tile.h; path = gboy/Tile.h; sourceTree = "<group>"; };
+		4ED12C062692C3E7006A40A4 /* MMU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MMU.h; path = gboy/MMU.h; sourceTree = "<group>"; };
+		4ED12C072692C3E7006A40A4 /* constants.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = constants.h; path = gboy/constants.h; sourceTree = "<group>"; };
+		5176A4D0226542EE990604AA /* MMU.cc */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = MMU.cc; path = gboy/MMU.cc; sourceTree = SOURCE_ROOT; };
+		6C132221BF104AA5ADB3A507 /* CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		85FC5D579BA84765A56C9E53 /* Timer.cc */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = Timer.cc; path = gboy/Timer.cc; sourceTree = SOURCE_ROOT; };
+		94970CBBDCFB49FE8DF33C72 /* CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		A45A2C32E14E4E1280431E02 /* picoboy */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; path = picoboy; sourceTree = BUILT_PRODUCTS_DIR; };
+		A50CA72E6F60409EA5530C5B /* PPU.cc */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = PPU.cc; path = gboy/PPU.cc; sourceTree = SOURCE_ROOT; };
+		C4F120D2DA114A4FBBA3949C /* GBoy.cc */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = GBoy.cc; path = gboy/GBoy.cc; sourceTree = SOURCE_ROOT; };
+		C721A02E80DB41D08D67E206 /* Cartridge.cc */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = Cartridge.cc; path = gboy/Cartridge.cc; sourceTree = SOURCE_ROOT; };
+		FE92AE9A9B584953B0E1DE54 /* Tile.cc */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = Tile.cc; path = gboy/Tile.cc; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		583CA34F084E4A0B9A7D6EBE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		2FFF19C858A54C159F397BE3 /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				4ED12C072692C3E7006A40A4 /* constants.h */,
+				4ED12C022692C3E7006A40A4 /* CPU.h */,
+				2AD72C494F85432F805F3D6F /* CPU.cc */,
+				4ED12C002692C3E7006A40A4 /* Cartridge.h */,
+				C721A02E80DB41D08D67E206 /* Cartridge.cc */,
+				4ED12C012692C3E7006A40A4 /* GBoy.h */,
+				C4F120D2DA114A4FBBA3949C /* GBoy.cc */,
+				4ED12C062692C3E7006A40A4 /* MMU.h */,
+				5176A4D0226542EE990604AA /* MMU.cc */,
+				4ED12C042692C3E7006A40A4 /* PPU.h */,
+				A50CA72E6F60409EA5530C5B /* PPU.cc */,
+				4ED12C052692C3E7006A40A4 /* Tile.h */,
+				FE92AE9A9B584953B0E1DE54 /* Tile.cc */,
+				4ED12C032692C3E7006A40A4 /* Timer.h */,
+				85FC5D579BA84765A56C9E53 /* Timer.cc */,
+				020A3BCEEB8E4F138B49A60B /* picoboy.cpp */,
+			);
+			name = "Source Files";
+			sourceTree = "<group>";
+		};
+		46557DA682F14CE1B2AD832C = {
+			isa = PBXGroup;
+			children = (
+				90D5137663464FE6B5944151 /* picoboy */,
+				7C73368EA1B548B4A3E90BCC /* ALL_BUILD */,
+				55ECFA00A72D4523A5B695C3 /* Products */,
+				FD1A0A557CF747FDA2DC31B1 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		55ECFA00A72D4523A5B695C3 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A45A2C32E14E4E1280431E02 /* picoboy */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		7C73368EA1B548B4A3E90BCC /* ALL_BUILD */ = {
+			isa = PBXGroup;
+			children = (
+				E691703F873E4768A0F3BF98 /* CMake Rules */,
+				94970CBBDCFB49FE8DF33C72 /* CMakeLists.txt */,
+			);
+			name = ALL_BUILD;
+			sourceTree = "<group>";
+		};
+		90D5137663464FE6B5944151 /* picoboy */ = {
+			isa = PBXGroup;
+			children = (
+				2FFF19C858A54C159F397BE3 /* Source Files */,
+				6C132221BF104AA5ADB3A507 /* CMakeLists.txt */,
+			);
+			name = picoboy;
+			sourceTree = "<group>";
+		};
+		E691703F873E4768A0F3BF98 /* CMake Rules */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = "CMake Rules";
+			sourceTree = "<group>";
+		};
+		FD1A0A557CF747FDA2DC31B1 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		35C77BCF631B4878A25F5985 /* picoboy */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E5AAD63B1C964456B79DA7C5 /* Build configuration list for PBXNativeTarget "picoboy" */;
+			buildPhases = (
+				7D98F952C4664088ABF31D3C /* Sources */,
+				583CA34F084E4A0B9A7D6EBE /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B7BCA1AFDA7346948D764DC8 /* PBXTargetDependency */,
+			);
+			name = picoboy;
+			productName = picoboy;
+			productReference = A45A2C32E14E4E1280431E02 /* picoboy */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		37F4314EF14442D391298AEA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1250;
+			};
+			buildConfigurationList = 45BF6F68EB4B4B318A83C6FE /* Build configuration list for PBXProject "picoboy" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 46557DA682F14CE1B2AD832C;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E30FBDB5CFA84A069C51A61F /* ALL_BUILD */,
+				D10D4FC8EC2D4D42933A2C70 /* ZERO_CHECK */,
+				35C77BCF631B4878A25F5985 /* picoboy */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		1FF0C9202B4D4B3E2A6419E2 /* Generate CMakeFiles/ALL_BUILD */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate CMakeFiles/ALL_BUILD";
+			outputPaths = (
+				"/Users/harishankar/Development/Personal-dev/PicoBoy/CMakeFiles/ALL_BUILD",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nif test \"$CONFIGURATION\" = \"Debug\"; then :\n  cd /Users/harishankar/Development/Personal-dev/PicoBoy\n  echo Build\\ all\\ projects\nfi\nif test \"$CONFIGURATION\" = \"Release\"; then :\n  cd /Users/harishankar/Development/Personal-dev/PicoBoy\n  echo Build\\ all\\ projects\nfi\nif test \"$CONFIGURATION\" = \"MinSizeRel\"; then :\n  cd /Users/harishankar/Development/Personal-dev/PicoBoy\n  echo Build\\ all\\ projects\nfi\nif test \"$CONFIGURATION\" = \"RelWithDebInfo\"; then :\n  cd /Users/harishankar/Development/Personal-dev/PicoBoy\n  echo Build\\ all\\ projects\nfi\n";
+			showEnvVarsInLog = 0;
+		};
+		33E5E4C7D16656A4AFECCB5B /* Generate CMakeFiles/ZERO_CHECK */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate CMakeFiles/ZERO_CHECK";
+			outputPaths = (
+				"/Users/harishankar/Development/Personal-dev/PicoBoy/CMakeFiles/ZERO_CHECK",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nif test \"$CONFIGURATION\" = \"Debug\"; then :\n  cd /Users/harishankar/Development/Personal-dev/PicoBoy\n  make -f /Users/harishankar/Development/Personal-dev/PicoBoy/CMakeScripts/ReRunCMake.make\nfi\nif test \"$CONFIGURATION\" = \"Release\"; then :\n  cd /Users/harishankar/Development/Personal-dev/PicoBoy\n  make -f /Users/harishankar/Development/Personal-dev/PicoBoy/CMakeScripts/ReRunCMake.make\nfi\nif test \"$CONFIGURATION\" = \"MinSizeRel\"; then :\n  cd /Users/harishankar/Development/Personal-dev/PicoBoy\n  make -f /Users/harishankar/Development/Personal-dev/PicoBoy/CMakeScripts/ReRunCMake.make\nfi\nif test \"$CONFIGURATION\" = \"RelWithDebInfo\"; then :\n  cd /Users/harishankar/Development/Personal-dev/PicoBoy\n  make -f /Users/harishankar/Development/Personal-dev/PicoBoy/CMakeScripts/ReRunCMake.make\nfi\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		7D98F952C4664088ABF31D3C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A97665556A10496FAA63345D /* CPU.cc in Sources */,
+				CF3711B72FF848E9B88FD465 /* Cartridge.cc in Sources */,
+				A4FE83B41E694A99AE2B1E54 /* GBoy.cc in Sources */,
+				BD0B2FC31E66461B90CB6DDD /* MMU.cc in Sources */,
+				378A29DAA8DB4028A3A2BDC0 /* PPU.cc in Sources */,
+				930B8F3F2F924502904DA993 /* Tile.cc in Sources */,
+				95FE8FC4729546B3AF026539 /* Timer.cc in Sources */,
+				D084B4DD49A84869983E0387 /* picoboy.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		9B5A42C6204F4BF4BA2A93E9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 35C77BCF631B4878A25F5985 /* picoboy */;
+			targetProxy = 6CC5EF101669451C91AEF186 /* PBXContainerItemProxy */;
+		};
+		A1EDA7F764DD414E9AEFBA67 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D10D4FC8EC2D4D42933A2C70 /* ZERO_CHECK */;
+			targetProxy = 67376A0FF4224EC8887C7CD7 /* PBXContainerItemProxy */;
+		};
+		B7BCA1AFDA7346948D764DC8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D10D4FC8EC2D4D42933A2C70 /* ZERO_CHECK */;
+			targetProxy = D4576707FE78412B91B57DD2 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1C868A65B8CD4A5C950FEE2E /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = "'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'";
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				SYMROOT = "/Users/harishankar/Development/Personal-dev/PicoBoy";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = "$(inherited)";
+			};
+			name = MinSizeRel;
+		};
+		2BB5A5615B854A7CBA9EB757 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = "'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'";
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (
+					"/Users/harishankar/Development/Personal-dev/PicoBoy/SDL2Test",
+					/usr/local/Cellar/sdl2/2.0.14_1/include/SDL2,
+					"/Users/harishankar/Development/Personal-dev/PicoBoy/.",
+					"/Users/harishankar/Development/Personal-dev/PicoBoy/gboy",
+					"$(inherited)",
+				);
+				INSTALL_PATH = "";
+				OTHER_CPLUSPLUSFLAGS = "       ";
+				OTHER_LDFLAGS = (
+					"-Wl,-search_paths_first",
+					"-Wl,-headerpad_max_install_names",
+					"-L/usr/local/Cellar/sdl2/2.0.14_1/lib",
+					"-lSDL2",
+				);
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = picoboy;
+				SECTORDER_FLAGS = "";
+				SYMROOT = "/Users/harishankar/Development/Personal-dev/PicoBoy";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = "$(inherited)";
+			};
+			name = Release;
+		};
+		44E59257878546CEA79620EB /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = "'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'";
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				SYMROOT = "/Users/harishankar/Development/Personal-dev/PicoBoy";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = "$(inherited)";
+			};
+			name = RelWithDebInfo;
+		};
+		4C6AA38EBCC24E2FB873F7A1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = "'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'";
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				SYMROOT = "/Users/harishankar/Development/Personal-dev/PicoBoy";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = "$(inherited)";
+			};
+			name = Release;
+		};
+		51C79A6D7032422B81D08D67 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = "'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'";
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				SYMROOT = "/Users/harishankar/Development/Personal-dev/PicoBoy";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = "$(inherited)";
+			};
+			name = Debug;
+		};
+		6AA979B280A64CAEB4CD0A26 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.3.sdk;
+				SYMROOT = "/Users/harishankar/Development/Personal-dev/PicoBoy/build";
+			};
+			name = MinSizeRel;
+		};
+		6DBF5CED59D04153998F6655 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = "'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'";
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				SYMROOT = "/Users/harishankar/Development/Personal-dev/PicoBoy";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = "$(inherited)";
+			};
+			name = MinSizeRel;
+		};
+		7B394E4C00554173B8718FDD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = "'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'";
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (
+					"/Users/harishankar/Development/Personal-dev/PicoBoy/SDL2Test",
+					/usr/local/Cellar/sdl2/2.0.14_1/include/SDL2,
+					"/Users/harishankar/Development/Personal-dev/PicoBoy/.",
+					"/Users/harishankar/Development/Personal-dev/PicoBoy/gboy",
+					"$(inherited)",
+				);
+				INSTALL_PATH = "";
+				OTHER_CPLUSPLUSFLAGS = "       ";
+				OTHER_LDFLAGS = (
+					"-Wl,-search_paths_first",
+					"-Wl,-headerpad_max_install_names",
+					"-L/usr/local/Cellar/sdl2/2.0.14_1/lib",
+					"-lSDL2",
+				);
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = picoboy;
+				SECTORDER_FLAGS = "";
+				SYMROOT = "/Users/harishankar/Development/Personal-dev/PicoBoy";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = "$(inherited)";
+			};
+			name = Debug;
+		};
+		9307B0D0C4AC406FA64A12D5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.3.sdk;
+				SYMROOT = "/Users/harishankar/Development/Personal-dev/PicoBoy/build";
+			};
+			name = Debug;
+		};
+		B602E7DCD48143E48E72845D /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.3.sdk;
+				SYMROOT = "/Users/harishankar/Development/Personal-dev/PicoBoy/build";
+			};
+			name = RelWithDebInfo;
+		};
+		C73674E0AD0D4A769B54DC1E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.3.sdk;
+				SYMROOT = "/Users/harishankar/Development/Personal-dev/PicoBoy/build";
+			};
+			name = Release;
+		};
+		C7A9E4CCD39944A78D0C60AE /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = "'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'";
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (
+					"/Users/harishankar/Development/Personal-dev/PicoBoy/SDL2Test",
+					/usr/local/Cellar/sdl2/2.0.14_1/include/SDL2,
+					"/Users/harishankar/Development/Personal-dev/PicoBoy/.",
+					"/Users/harishankar/Development/Personal-dev/PicoBoy/gboy",
+					"$(inherited)",
+				);
+				INSTALL_PATH = "";
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG ";
+				OTHER_LDFLAGS = (
+					"-Wl,-search_paths_first",
+					"-Wl,-headerpad_max_install_names",
+					"-L/usr/local/Cellar/sdl2/2.0.14_1/lib",
+					"-lSDL2",
+				);
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = picoboy;
+				SECTORDER_FLAGS = "";
+				SYMROOT = "/Users/harishankar/Development/Personal-dev/PicoBoy";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = "$(inherited)";
+			};
+			name = MinSizeRel;
+		};
+		C91C189F05C64238971EC072 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = "'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'";
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				SYMROOT = "/Users/harishankar/Development/Personal-dev/PicoBoy";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = "$(inherited)";
+			};
+			name = Debug;
+		};
+		CF2F2D956DE647FE97BE16BC /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = "'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'";
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				SYMROOT = "/Users/harishankar/Development/Personal-dev/PicoBoy";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = "$(inherited)";
+			};
+			name = RelWithDebInfo;
+		};
+		D44DD3204A494F378F0CC379 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = "'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'";
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				SYMROOT = "/Users/harishankar/Development/Personal-dev/PicoBoy";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = "$(inherited)";
+			};
+			name = Release;
+		};
+		E5D70F0B0F0E451185575405 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 2;
+				GCC_PREPROCESSOR_DEFINITIONS = "'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'";
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (
+					"/Users/harishankar/Development/Personal-dev/PicoBoy/SDL2Test",
+					/usr/local/Cellar/sdl2/2.0.14_1/include/SDL2,
+					"/Users/harishankar/Development/Personal-dev/PicoBoy/.",
+					"/Users/harishankar/Development/Personal-dev/PicoBoy/gboy",
+					"$(inherited)",
+				);
+				INSTALL_PATH = "";
+				OTHER_CPLUSPLUSFLAGS = "       -DNDEBUG ";
+				OTHER_LDFLAGS = (
+					"-Wl,-search_paths_first",
+					"-Wl,-headerpad_max_install_names",
+					"-L/usr/local/Cellar/sdl2/2.0.14_1/lib",
+					"-lSDL2",
+				);
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = picoboy;
+				SECTORDER_FLAGS = "";
+				SYMROOT = "/Users/harishankar/Development/Personal-dev/PicoBoy";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = "$(inherited)";
+			};
+			name = RelWithDebInfo;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2897B8C8E5F64337BB01F479 /* Build configuration list for PBXAggregateTarget "ALL_BUILD" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				51C79A6D7032422B81D08D67 /* Debug */,
+				4C6AA38EBCC24E2FB873F7A1 /* Release */,
+				6DBF5CED59D04153998F6655 /* MinSizeRel */,
+				44E59257878546CEA79620EB /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		45BF6F68EB4B4B318A83C6FE /* Build configuration list for PBXProject "picoboy" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9307B0D0C4AC406FA64A12D5 /* Debug */,
+				C73674E0AD0D4A769B54DC1E /* Release */,
+				6AA979B280A64CAEB4CD0A26 /* MinSizeRel */,
+				B602E7DCD48143E48E72845D /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E5AAD63B1C964456B79DA7C5 /* Build configuration list for PBXNativeTarget "picoboy" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7B394E4C00554173B8718FDD /* Debug */,
+				2BB5A5615B854A7CBA9EB757 /* Release */,
+				C7A9E4CCD39944A78D0C60AE /* MinSizeRel */,
+				E5D70F0B0F0E451185575405 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F9527C2ABFF845309289CF02 /* Build configuration list for PBXAggregateTarget "ZERO_CHECK" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C91C189F05C64238971EC072 /* Debug */,
+				D44DD3204A494F378F0CC379 /* Release */,
+				1C868A65B8CD4A5C950FEE2E /* MinSizeRel */,
+				CF2F2D956DE647FE97BE16BC /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 37F4314EF14442D391298AEA /* Project object */;
+}
