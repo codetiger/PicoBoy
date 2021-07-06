@@ -5,7 +5,10 @@ MemoryManagementUnit::MemoryManagementUnit(Cartridge* cart) {
     loadBIOS();
 }
 
-uint8_t MemoryManagementUnit::Read(uint16_t addr) {
+uint8_t MemoryManagementUnit::Read(uint16_t addr, bool isRawRead) {
+    if(isRawRead)
+        return memory[addr];
+
     if (addr <= 0x7FFF) {
         if (addr <= 0xFF && memory[0xFF50] != 0x1)
             return memory[addr];
@@ -20,11 +23,15 @@ uint8_t MemoryManagementUnit::Read(uint16_t addr) {
         return memory[addr];
 }
 
-void MemoryManagementUnit::Write(uint16_t addr, uint8_t data, bool isPPUWrite) {
+void MemoryManagementUnit::Write(uint16_t addr, uint8_t data, bool isRawWrite) {
+    if(isRawWrite) {
+        memory[addr] = data;
+        return;
+    }
+    
     if (addr < 0x8000) {
         return;
     } else if (addr == AddrRegDma) {
-        memory[addr] = data;
         LoadDMA(data);
     } else if (addr == AddrRegLcdControl) {
         memory[addr] = data;
@@ -37,7 +44,9 @@ void MemoryManagementUnit::Write(uint16_t addr, uint8_t data, bool isPPUWrite) {
         memory[addr] = data;
         memory[addr - 0x2000] = data; //echo RAM
     } else if(addr == 0xFF44) {
-        memory[addr] = isPPUWrite ? data : 0x0;
+        memory[addr] = 0x0;
+    } else if(addr == 0xFF04) {
+        memory[addr] = 0x0;
     } else if(addr == 0xFF01) {
         memory[addr] = data;
         printf("%c", data); // Serial port
@@ -49,7 +58,7 @@ void MemoryManagementUnit::Write(uint16_t addr, uint8_t data, bool isPPUWrite) {
 }
 
 void MemoryManagementUnit::loadBIOS() {
-    std::string path = "./roms/bios.gb";
+    std::string path = "../roms/bios.gb";
     printf("Loading Bios: %s\n", path.c_str());
     std::ifstream biosFile;
     biosFile.open(path, std::ifstream::binary);

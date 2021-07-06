@@ -1,0 +1,144 @@
+{
+    "tests" : [
+        {
+            "opcodedata" : ["0x0"],
+            "preload" : {
+                "register" :{"b" : 0, "c" : 0, "d" : 0, "e" : 0, "h" : 0, "l" : 0, "a" : 0},
+                "flag" : {"z" : false, "n" : false, "h" : false, "c" : false},
+                "memory" : [
+                    {
+                        "at" : "0x8f00",
+                        "next" : 100,
+                        "value" : 0
+                    }
+                ],
+                "sp" : "0xfffe",
+                "pc" : "0x8f00"
+            },
+            "check" : {
+                "register" :{"b" : 0, "c" : 0, "d" : 0, "e" : 0, "h" : 0, "l" : 0, "a" : 0},
+                "flag" : {"z" : false, "n" : false, "h" : false, "c" : false},
+                "sp" : "0xfffe",
+                "pc" : "0x8f01",
+                "cycles" : 4
+            }
+        },
+        {
+            "opcodedata" : ["0xf5"],
+            "preload" : {
+                "register" :{"b" : 1, "c" : 2, "d" : 3, "e" : 4, "h" : 5, "l" : 6, "a" : 7},
+                "flag" : {"z" : false, "n" : true, "h" : false, "c" : true},
+                "sp" : "0xfffe",
+                "pc" : "0x8f01"
+            },
+            "check" : {
+                "register" : {"b" : 1, "c" : 2, "d" : 3, "e" : 4, "h" : 5, "l" : 6, "a" : 7},
+                "flag" : {"z" : false, "n" : true, "h" : false, "c" : true},
+                "cycles" : 16,
+                "memory" : [
+                    {
+                        "at" : "0xfffd",
+                        "value" : 7
+                    },
+                    {
+                        "at" : "0xfffc",
+                        "value" : 80
+                    }
+                ]
+            }
+        },
+        {
+            "opcodedata" : ["0xf1"],
+            "preload" : {
+                "register" :{"b" : 0, "c" : 0, "d" : 0, "e" : 0, "h" : 0, "l" : 0, "a" : 0},
+                "flag" : {"z" : false, "n" : false, "h" : false, "c" : false},
+                "sp" : "0xfffc",
+                "pc" : "0x8f02"
+            },
+            "check" : {
+                "register" : {"b" : 0, "c" : 0, "d" : 0, "e" : 0, "h" : 0, "l" : 0, "a" : 7},
+                "flag" : {"z" : false, "n" : true, "h" : false, "c" : true},
+                "cycles" : 12
+            }
+        },
+        {
+            "opcodedata" : ["0xc4", "0x00", "0x90"],
+            "preload" : {
+                "flag" : {"z" : false, "n" : false, "h" : false, "c" : false},
+                "sp" : "0xfffc",
+                "pc" : "0x8f03"
+            },
+            "check" : {
+                "pc" : "0x9000",
+                "memory" : [
+                    {
+                        "at" : "0xfffa",
+                        "value" : 6
+                    },
+                    {
+                        "at" : "0xfffb",
+                        "value" : 143
+                    }
+                ],
+                "cycles" : 24
+            }
+        },
+        {
+            "opcodedata" : ["0xc0"],
+            "preload" : {
+                "flag" : {"z" : false, "n" : false, "h" : false, "c" : false},
+                "sp" : "0xfffa",
+                "pc" : "0x9000"
+            },
+            "check" : {
+                "pc" : "0x8f06",
+                "cycles" : 20
+            }
+        },
+        {
+            "opcodedata" : ["0xcd", "0x00", "0x91"],
+            "preload" : {
+                "flag" : {"z" : false, "n" : false, "h" : false, "c" : false},
+                "sp" : "0xfffc",
+                "pc" : "0x8f06"
+            },
+            "check" : {
+                "pc" : "0x9100",
+                "memory" : [
+                    {
+                        "at" : "0xfffa",
+                        "value" : 9
+                    },
+                    {
+                        "at" : "0xfffb",
+                        "value" : 143
+                    }
+                ],
+                "cycles" : 24
+            }
+        },
+        {
+            "opcodedata" : ["0xc9"],
+            "preload" : {
+                "sp" : "0xfffa",
+                "pc" : "0x9100"
+            },
+            "check" : {
+                "pc" : "0x8f09",
+                "cycles" : 16
+            }
+        },
+        {
+            "opcodedata" : ["0x18", "0xfe"],
+            "preload" : {
+                "sp" : "0xfffa",
+                "pc" : "0x9101"
+            },
+            "check" : {
+                "pc" : "0x8f09",
+                "cycles" : 16
+            }
+        }
+
+    ]
+}

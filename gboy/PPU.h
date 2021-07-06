@@ -17,18 +17,17 @@ private:
     MemoryManagementUnit *mmu;
     long cycleCount;
     LcdMode currentMode;
+    uint8_t currentLine;
 
     void setLCDMode(LcdMode mode);
 
+    void updateLine();
     void processOam();
     void processTransfer();
     void processHBlank();
     void processVBlank();
 
-    void writeScanLine(uint8_t line);
-    void writeBGLine(uint8_t line);
-    void writeBGLine1(uint8_t line);
-    void writeWindowLine(uint8_t line);
+    void writeBGWindowLine(uint8_t line);
     void writeSprites();
     void drawSprite(const uint8_t sprite_n);
     void updateFrameBuffer();
@@ -49,4 +48,4 @@ public:
 const uint16_t CyclesHBlank = 204;     // Mode 0 (H-Blank) 204 cycles per Scanline
 const uint16_t CyclesVBlank = 456;     // Mode 1 (V-Blank) 4560 cycles per Frame 4560/10 times per Frame
 const uint16_t CyclesOam = 80;         // Mode 2 (OAM Search) 80 cycles per Scanline
-const uint16_t CyclesTransfer = 173;   // Mode 3 (Transfer LCD) 173 cycles per Scanline
+const uint16_t CyclesTransfer = 172;   // Mode 3 (Transfer LCD) 173 cycles per Scanline

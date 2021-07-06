@@ -12,7 +12,7 @@ int main(int argc, char *argv[]){
     SDL_Window *window;
     const uint8_t scale = 2;
 
-    std::string romPath = "./roms/tetris.gb";
+    std::string romPath = "../roms/tetris.gb";
     if(argc >= 2)
         romPath = argv[1];
     GBoy *gb = new GBoy(romPath);

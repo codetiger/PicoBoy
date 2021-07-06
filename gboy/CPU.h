@@ -6,14 +6,9 @@
 
 class CentralProcessingUnit {
 private:
-    uint8_t accumulator;
-	uint8_t b, c, d, e, h, l;
-    uint16_t stackPointer;
     uint16_t time, deltaTime;
     bool interruptMasterFlag;
-	uint16_t programCounter;
 
-    bool isZero, isSubtract, isCarry, isHalfCarry;
     bool isHalted;
     MemoryManagementUnit *mmu;
 
@@ -122,5 +117,11 @@ public:
     ~CentralProcessingUnit();
     void Print();
 
-    uint8_t ExecuteInstruction(uint16_t skipDebug);
+    uint8_t accumulator;
+	uint8_t b, c, d, e, h, l;
+    uint16_t stackPointer;
+	uint16_t programCounter;
+    bool isZero, isSubtract, isCarry, isHalfCarry;
+
+    uint8_t ExecuteInstruction(uint16_t skipDebug = 0x00);
 };

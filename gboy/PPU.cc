@@ -2,7 +2,9 @@
 
 PixelProcessingUnit::PixelProcessingUnit(MemoryManagementUnit *mmu) {
     this->mmu = mmu;
-    this->cycleCount = 0;
+    cycleCount = 0;
+    currentLine = 0;
+    mmu->Write(AddrRegLcdY, 0, true);
     HasFrameBufferUpdated = false;
     setLCDMode(VBLANK);
 }
@@ -26,24 +28,63 @@ void PixelProcessingUnit::Cycle(uint8_t cycles) {
     cycleCount += cycles;
 
     switch (currentMode) {
-        case ACCESS_OAM:
-            processOam();
-            break;
-        case ACCESS_VRAM:
-            processTransfer();
-            break;
         case HBLANK:
             processHBlank();
             break;
         case VBLANK:
             processVBlank();
             break;
+        case ACCESS_OAM:
+            processOam();
+            break;
+        case ACCESS_VRAM:
+            processTransfer();
+            break;
     }
+}
+
+void PixelProcessingUnit::updateLine() {
+    currentLine++;
+    uint8_t line = mmu->Read(AddrRegLcdY);
+    line++;
+    if (currentLine > 153)
+        currentLine = line = 0;
+    mmu->Write(AddrRegLcdY, line, true);
+}
+
+void PixelProcessingUnit::processHBlank() {
+    if(cycleCount >= CyclesHBlank) {
+        cycleCount = cycleCount % CyclesHBlank;
+        updateLine();
+
+        if (currentLine == 143) {
+            setLCDMode(VBLANK);
+            mmu->WriteIORegisterBit(AddrRegInterruptFlag, FlagInterruptVBlank, true);
+            // writeSprites();
+            updateFrameBuffer();
+            HasFrameBufferUpdated = true;
+        } else {
+            setLCDMode(ACCESS_OAM);
+        }
+    }       
+}
+
+void PixelProcessingUnit::processVBlank() {
+    if(cycleCount >= CyclesVBlank) {
+        cycleCount = cycleCount % CyclesVBlank; 
+
+        if (currentLine == 0) {
+            setLCDMode(ACCESS_OAM);
+        } else {
+            updateLine();
+            if(currentLine == 0)
+                setLCDMode(ACCESS_OAM);
+        }
+    }    
 }
 
 void PixelProcessingUnit::processOam() {
     if(cycleCount >= CyclesOam) {
-        // printf("OAM\n");
         cycleCount = cycleCount % CyclesOam;
         setLCDMode(ACCESS_VRAM);
     }    
@@ -51,53 +92,20 @@ void PixelProcessingUnit::processOam() {
 
 void PixelProcessingUnit::processTransfer() {
     if(cycleCount >= CyclesTransfer) {
-        // printf("Transfer\n");
         cycleCount = cycleCount % CyclesTransfer;
         setLCDMode(HBLANK);
 
-        bool hblank_interrupt = mmu->ReadIORegisterBit(AddrRegLcdStatus, FlagLcdStatusHBlankInterruptOn);
-        if (hblank_interrupt)
-            mmu->WriteIORegisterBit(AddrRegInterruptFlag, FlagInterruptLcd, true);
+        writeBGWindowLine(currentLine);
+        // writeSprites();
+        // bool hblank_interrupt = mmu->ReadIORegisterBit(AddrRegLcdStatus, FlagLcdStatusHBlankInterruptOn);
+        // if (hblank_interrupt)
+        //     mmu->WriteIORegisterBit(AddrRegInterruptFlag, FlagInterruptLcd, true);
 
-        uint8_t currentLine = mmu->Read(AddrRegLcdY);
-        uint8_t currentLineCompare = mmu->Read(AddrRegLcdYCompare);
-        if(currentLine == currentLineCompare && mmu->ReadIORegisterBit(AddrRegLcdStatus, FlagLcdStatusLcdYCInterruptOn))
-            mmu->WriteIORegisterBit(AddrRegInterruptFlag, FlagInterruptLcd, true);
-        mmu->WriteIORegisterBit(AddrRegLcdStatus, FlagLcdStatusCoincidence, (currentLine == currentLineCompare));
-    }    
-}
-    
-void PixelProcessingUnit::processHBlank() {
-    if(cycleCount >= CyclesHBlank) {
-        // printf("HBlank\n");
-        cycleCount = cycleCount % CyclesHBlank;
-        uint8_t currentLine = mmu->Read(AddrRegLcdY);
-        writeScanLine(currentLine++);
-        mmu->Write(AddrRegLcdY, currentLine, true);
-
-        if (currentLine == 144) {
-            setLCDMode(VBLANK);
-            mmu->WriteIORegisterBit(AddrRegInterruptFlag, FlagInterruptVBlank, true);
-        } else {
-            setLCDMode(ACCESS_OAM);
-        }
-    }       
-}
-    
-void PixelProcessingUnit::processVBlank() {
-    if(cycleCount >= CyclesVBlank) {
-        // printf("VBlank\n");
-        cycleCount = cycleCount % CyclesVBlank; 
-        uint8_t currentLine = mmu->Read(AddrRegLcdY);
-        mmu->Write(AddrRegLcdY, ++currentLine, true);
-
-        if (currentLine == 154) {
-            writeSprites();
-            updateFrameBuffer();
-            HasFrameBufferUpdated = true;
-            mmu->Write(AddrRegLcdY, 0, true);
-            setLCDMode(ACCESS_OAM);
-        };
+        // uint8_t currentLine = mmu->Read(AddrRegLcdY);
+        // uint8_t currentLineCompare = mmu->Read(AddrRegLcdYCompare);
+        // if(currentLine == currentLineCompare && mmu->ReadIORegisterBit(AddrRegLcdStatus, FlagLcdStatusLcdYCInterruptOn))
+        //     mmu->WriteIORegisterBit(AddrRegInterruptFlag, FlagInterruptLcd, true);
+        // mmu->WriteIORegisterBit(AddrRegLcdStatus, FlagLcdStatusCoincidence, (currentLine == currentLineCompare));
     }    
 }
 
@@ -123,105 +131,67 @@ void PixelProcessingUnit::updateFrameBuffer() {
     memset(localFrameBuffer, 0, sizeof(localFrameBuffer));
 }
 
-void PixelProcessingUnit::writeScanLine(uint8_t line) {
-    // printf("writeScanLine: %d\n", line);
-
+void PixelProcessingUnit::writeBGWindowLine(uint8_t line) {
     if(!mmu->ReadIORegisterBit(AddrRegLcdControl, FlagLcdControlLcdOn))
         return;
 
-    // printf("\tFlagLcdControlLcdOn\n");
+    if(line >= 144)
+        return;
 
-    if(mmu->ReadIORegisterBit(AddrRegLcdControl, FlagLcdControlBgOn))
-        writeBGLine(line);
+    uint16_t mapStart = mmu->ReadIORegisterBit(AddrRegLcdControl, FlagLcdControlBgMap) ? AddrBgMap0Start : AddrBgMap1Start;
+    bool isSignedIndex = !mmu->ReadIORegisterBit(AddrRegLcdControl, FlagLcdControlBgData);
+    uint16_t dataStart = isSignedIndex ? AddrTileData0Start : AddrTileData1Start;
 
-    if(mmu->ReadIORegisterBit(AddrRegLcdControl, FlagLcdControlWindowOn))
-        writeWindowLine(line);
-} 
+    uint8_t scrollX = mmu->Read(AddrRegScrollX);
+    uint8_t scrollY = mmu->Read(AddrRegScrollY);
+    uint8_t windowX = mmu->Read(AddrRegWindowX) - 7;
+    uint8_t windowY = mmu->Read(AddrRegWindowY);
 
-void PixelProcessingUnit::writeBGLine(uint8_t line) {
-    // printf("\twriteBGLine: %d\n", line);
-    bool use_tile_set_zero = mmu->ReadIORegisterBit(AddrRegLcdControl, FlagLcdControlBgData);
-    bool use_tile_map_zero = !mmu->ReadIORegisterBit(AddrRegLcdControl, FlagLcdControlBgMap);
+    bool usingWindow = (line >= windowY) && mmu->ReadIORegisterBit(AddrRegLcdControl, FlagLcdControlWindowOn);
+    uint16_t tilemap = mmu->ReadIORegisterBit(AddrRegLcdControl, usingWindow ? FlagLcdControlWindowMap : FlagLcdControlBgMap) ? AddrBgMap1Start : AddrBgMap0Start;
 
-    uint16_t tile_set_address = use_tile_set_zero ? AddrTileData1Start : AddrTileData0Start;
-    uint16_t tile_map_address = use_tile_map_zero ? AddrBgMap0Start : AddrBgMap1Start;
+    uint8_t y = scrollY + line;
+    if (usingWindow)
+        y = line - windowY;
 
-    uint screen_y = line;
+    uint16_t tile_row = ((uint8_t)(y / 8));
 
-    for (uint screen_x = 0; screen_x < 160; screen_x++) {
-        uint scrolled_x = screen_x + mmu->Read(AddrRegScrollX);
-        uint scrolled_y = screen_y + mmu->Read(AddrRegScrollY);
-        uint bg_map_x = scrolled_x % 256;
-        uint by_map_y = scrolled_y % 256;
-        uint tile_x = bg_map_x / 8;
-        uint tile_y = by_map_y / 8;
-        uint tile_pixel_x = bg_map_x % 8;
-        uint tile_pixel_y = by_map_y % 8;
+    for (int i = 0; i < 160; i++) {
+        uint8_t x = i + scrollX;
+        if (usingWindow && i >= windowX)
+            x = i - windowX;
 
-        /* Work out the address of the tile ID from the tile map */
-        uint tile_index = tile_y * 32 + tile_x;
-        uint16_t tile_id_address = tile_map_address + tile_index;
-        uint8_t tile_id = mmu->Read(tile_id_address);
+        uint16_t tile_column = x / 8;
 
-        uint tile_data_mem_offset = use_tile_set_zero ? tile_id * 16
-            : (static_cast<int8_t>(tile_id) + 128) * 16;
+        uint16_t addr = tilemap + tile_row * 32 + tile_column;
+        int16_t tilenum;
+        if (isSignedIndex)
+            tilenum = (int8_t) mmu->Read(addr);
+        else
+            tilenum = mmu->Read(addr);
 
-        uint tile_data_line_offset = tile_pixel_y * 2;
-        uint16_t tile_line_data_start_address = tile_set_address + tile_data_mem_offset + tile_data_line_offset;
+        uint16_t tile_address;
+        if (!isSignedIndex)
+            tile_address = dataStart + (tilenum * 16);
+        else
+            tile_address = dataStart + ((tilenum + 128) * 16);
 
-        uint8_t pixels_1 = mmu->Read(tile_line_data_start_address);
-        uint8_t pixels_2 = mmu->Read(tile_line_data_start_address + 1);
+        uint8_t lno = y % 8;
+        uint8_t byte1 = mmu->Read(tile_address + lno * 2);
+        uint8_t byte2 = mmu->Read(tile_address + lno * 2 + 1);
 
-        uint8_t req_bit = 7 - (tile_pixel_x % 8);
-        uint8_t bit1 = (pixels_1 >> req_bit) & 1;
-        uint8_t bit2 = (pixels_2 >> req_bit) & 1;
+        uint8_t req_bit = 7 - (x % 8);
+        uint8_t bit1 = (byte1 >> req_bit) & 1;
+        uint8_t bit2 = (byte2 >> req_bit) & 1;
         uint8_t colorid = (bit1 << 1) | bit2;
-        int color = getColor(colorid, AddrRegBgPalette);
-        localFrameBuffer[screen_x][screen_y] = color;
-    }
-}
-
-void PixelProcessingUnit::writeWindowLine(uint8_t screen_y) {
-    // printf("writeWindowLine: %d\n", screen_y);
-    bool use_tile_set_zero = mmu->ReadIORegisterBit(AddrRegLcdControl, FlagLcdControlBgData);
-    bool use_tile_map_zero = !mmu->ReadIORegisterBit(AddrRegLcdControl, FlagLcdControlWindowMap);
-
-    uint16_t tile_set_address = use_tile_set_zero ? AddrTileData1Start : AddrTileData0Start;
-    uint16_t tile_map_address = use_tile_map_zero ? AddrBgMap0Start : AddrBgMap1Start;
-    uint scrolled_y = screen_y - mmu->Read(AddrRegWindowY);
-    if (scrolled_y >= 144) { return; }
-
-    for (uint screen_x = 0; screen_x < 160; screen_x++) {
-        uint scrolled_x = screen_x + mmu->Read(AddrRegWindowX) - 7;
-
-        uint tile_x = scrolled_x / 8;
-        uint tile_y = scrolled_y / 8;
-        uint tile_pixel_x = scrolled_x % 8;
-        uint tile_pixel_y = scrolled_y % 8;
-
-        uint tile_index = tile_y * 32 + tile_x;
-        uint16_t tile_id_address = tile_map_address + tile_index;
-
-        uint8_t tile_id = mmu->Read(tile_id_address);
-        uint tile_data_mem_offset = use_tile_set_zero
-            ? tile_id * 16
-            : (static_cast<int8_t>(tile_id) + 128) * 16;
-
-        uint tile_data_line_offset = tile_pixel_y * 2;
-        uint16_t tile_line_data_start_address = tile_set_address + tile_data_mem_offset + tile_data_line_offset;
-
-        uint8_t pixels_1 = mmu->Read(tile_line_data_start_address);
-        uint8_t pixels_2 = mmu->Read(tile_line_data_start_address + 1);
-
-        uint8_t req_bit = 7 - (tile_pixel_x % 8);
-        uint8_t bit1 = (pixels_1 >> req_bit) & 1;
-        uint8_t bit2 = (pixels_2 >> req_bit) & 1;
-        uint8_t colorid = (bit1 << 1) | bit2;
-        localFrameBuffer[screen_x][screen_y] = getColor(colorid, AddrRegBgPalette);
+        localFrameBuffer[i][line] = getColor(colorid, AddrRegBgPalette);
     }
 }
 
 void PixelProcessingUnit::writeSprites() {
+    if(!mmu->ReadIORegisterBit(AddrRegLcdControl, FlagLcdControlLcdOn))
+        return;
+
     if(!mmu->ReadIORegisterBit(AddrRegLcdControl, FlagLcdControlObjOn))
         return;
 

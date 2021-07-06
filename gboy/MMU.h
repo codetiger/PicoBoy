@@ -7,8 +7,8 @@ class MemoryManagementUnit {
 public:
     MemoryManagementUnit(Cartridge* cart);
 
-    uint8_t Read(uint16_t addr);
-    void Write(uint16_t addr, uint8_t data, bool isPPUWrite = false);
+    uint8_t Read(uint16_t addr, bool isRawRead = false);
+    void Write(uint16_t addr, uint8_t data, bool isRawWrite = false);
 
     bool ReadIORegisterBit(uint16_t addr, uint8_t flag);
     void WriteIORegisterBit(uint16_t addr, uint8_t flag, bool value);
@@ -52,11 +52,11 @@ const uint16_t AddrRegTAC = 0xFF07;
 const uint16_t AddrRegInterruptFlag = 0xFF0F;
 const uint16_t AddrRegInterruptEnabled = 0xFFFF;
 
-const uint8_t FlagInterruptInput = 5;    
-const uint8_t FlagInterruptSerial = 4;
-const uint8_t FlagInterruptTimer = 3;
-const uint8_t FlagInterruptLcd = 2;
-const uint8_t FlagInterruptVBlank = 1;
+const uint8_t FlagInterruptInput = 4;    
+const uint8_t FlagInterruptSerial = 3;
+const uint8_t FlagInterruptTimer = 2;
+const uint8_t FlagInterruptLcd = 1;
+const uint8_t FlagInterruptVBlank = 0;
 
 const uint8_t FlagLcdStatusLcdYCInterruptOn     = 6;   // Bit 6 - LYC=LY Coincidence Interrupt (1=Enable) (Read/Write)
 const uint8_t FlagLcdStatusOamInterruptOn       = 5;   // Bit 5 - Mode 2 OAM Interrupt         (1=Enable) (Read/Write)

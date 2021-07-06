@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.0.0)
 project (picoboy)
 
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g")
+set(CMAKE_CXX_FLAGS_DEBUG "-O3 -g")
 set(CMAKE_BUILD_TYPE Debug)
 
 find_package(SDL2 REQUIRED)

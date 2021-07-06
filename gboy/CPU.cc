@@ -217,12 +217,9 @@ void CentralProcessingUnit::stackPush(uint8_t hi, uint8_t lo) {
 }
 
 uint16_t CentralProcessingUnit::stackPop() {
-    uint8_t lo = mmu->Read(stackPointer);
-    stackPointer++;
-    uint8_t hi = mmu->Read(stackPointer);
-    stackPointer++;
-    uint16_t val = stitch(hi, lo);
-    return val;
+    uint8_t lo = mmu->Read(stackPointer++);
+    uint8_t hi = mmu->Read(stackPointer++);
+    return stitch(hi, lo);
 }
 
 void CentralProcessingUnit::setHL(uint16_t addr) {
@@ -271,7 +268,7 @@ uint8_t CentralProcessingUnit::ExecuteInstruction(uint16_t skipDebug) {
         printf("Executing at 0x%04x", programCounter);
     uint16_t opcode = readMemoryFromProgramCounter();
     if(debug) 
-        printf(", OpCode: 0x%02x\n", opcode);
+        printf(", OpCode: 0x%02x", opcode);
     bool isExtended = false;
     if(opcode == 0xcb) {
         if(debug) 
@@ -279,14 +276,14 @@ uint8_t CentralProcessingUnit::ExecuteInstruction(uint16_t skipDebug) {
         opcode = readMemoryFromProgramCounter();
         isExtended = true;
         if(debug) 
-            printf(", ExtOpCode: 0x%02x\n", opcode);
+            printf(", ExtOpCode: 0x%02x", opcode);
     }
 
     std::map<uint16_t, Instruction*> &iset = isExtended ? instructionSetExtended : instructionSet;
     std::map<uint16_t, Instruction*>::iterator it = iset.find(opcode);
     if (it != iset.end()) {
         Instruction *inst = it->second;
-        if(debug) printf("Name: %s, ", inst->name.c_str());
+        if(debug) printf(", Name: %s, ", inst->name.c_str());
         if(debug && inst->size > 1) printf("Data: ");
         for (size_t i = 0; i < inst->size; i++) {
             data[i] = (i == 0) ? opcode : readMemoryFromProgramCounter();
@@ -432,9 +429,9 @@ void CentralProcessingUnit::instruction_JR(uint8_t* data) {
 
     if (condition) {
         deltaTime = 12;
-        int8_t val = static_cast<int8_t>(data[1]);
-        uint16_t new_pc = static_cast<uint16_t>(programCounter + val);
-        programCounter = new_pc;
+        int8_t val = data[1];
+        int16_t new_pc = (int16_t)programCounter + val;
+        programCounter = (uint16_t)new_pc;
     }
 }
 
@@ -488,7 +485,7 @@ void CentralProcessingUnit::instruction_Inc(uint8_t* data) {
     } else if (data[0] == 0x3c)
         reg = &(accumulator);
 
-    (*reg)++;
+    (*reg) = (*reg) + 1;
     isHalfCarry = (((*reg) & 0xf) == 0);
     isZero = (*reg) == 0;
     isSubtract = false;
@@ -520,7 +517,7 @@ void CentralProcessingUnit::instruction_Dec(uint8_t* data) {
     } else if (data[0] == 0x3d)
         reg = &(accumulator);
 
-    (*reg)--;
+    (*reg) = (*reg) - 1;
     isHalfCarry = (((*reg) & 0x0f) == 0x0f);
     isZero = (*reg) == 0;
     isSubtract = true;
@@ -637,11 +634,11 @@ void CentralProcessingUnit::instruction_Call(uint8_t* data) {
     if (data[0] == 0xcd)
         condition = true;
     else if (data[0] == 0xc4)
-        condition = (isZero == 0);
+        condition = !isZero;
     else if (data[0] == 0xcc)
         condition = isZero;
     else if (data[0] == 0xd4)
-        condition = (isCarry == 0);
+        condition = !isCarry;
     else if (data[0] == 0xdc)
         condition = isCarry;
 
@@ -676,24 +673,24 @@ void CentralProcessingUnit::instruction_Pop(uint8_t* data) {
         hi = &(d), lo = &(e);
     else if (data[0] == 0xe1)
         hi = &(h), lo = &(l);
-    else if (data[0] == 0xf1) {
-        accumulator = mmu->Read(stackPointer + 1);
-        setFlags(mmu->Read(stackPointer));
-        stackPointer += 2;
-        return;
-    }
+    else if (data[0] == 0xf1)
+        hi = &(accumulator);
 
-    *lo = mmu->Read(stackPointer);
-    *hi = mmu->Read(stackPointer + 1);
-    stackPointer += 2;
+    if (data[0] == 0xf1)
+        setFlags(mmu->Read(stackPointer++));
+    else
+        *lo = mmu->Read(stackPointer++);
+    *hi = mmu->Read(stackPointer++);
 }
 
 void CentralProcessingUnit::instruction_Return(uint8_t* data) {
-    bool condition = true;
+    bool condition = false;
     if (data[0] == 0xc0)
         condition = !(isZero);
     else if (data[0] == 0xc8)
         condition = isZero;
+    else if (data[0] == 0xc9)
+        condition = true;
     else if (data[0] == 0xd0)
         condition = !(isCarry);
     else if (data[0] == 0xd8)
@@ -730,12 +727,13 @@ void CentralProcessingUnit::instruction_Compare(uint8_t* data) {
         n = data[1];
 
     uint8_t reg = accumulator;
-    uint8_t result = static_cast<uint8_t>(reg - n);
+    uint16_t r1 = (uint16_t)((accumulator & 0xF)-((n) & 0xF));
+    uint16_t r2 = (uint16_t)(reg - n);
 
-    isZero = (result == 0);
+    isZero = (((uint8_t)r2) == 0);
     isSubtract = true;
-    isHalfCarry = (((reg & 0xf) - (n & 0xf)) < 0);
-    isCarry = (reg < n);
+    isHalfCarry = (r1 > 0xf);
+    isCarry = (r2 > 0xff);
 }
 
 void CentralProcessingUnit::instruction_LoadAnn(uint8_t* data) {
@@ -809,7 +807,7 @@ void CentralProcessingUnit::instruction_Add(uint8_t* data) {
     isHalfCarry = (accumulator & 0xf) + (d & 0xf) > 0xf;
     isSubtract = false;
 
-    accumulator = val;
+    accumulator = static_cast<uint8_t>(val);
 }
 
 void CentralProcessingUnit::instruction_Adc(uint8_t* data) {
@@ -947,7 +945,7 @@ void CentralProcessingUnit::instruction_AND(uint8_t* data) {
     accumulator &= d;
     isZero = (accumulator == 0);
     isHalfCarry = true;
-    isCarry = isSubtract = 0;
+    isCarry = isSubtract = false;
 }
 
 void CentralProcessingUnit::instruction_SRL(uint8_t* data) {
@@ -971,12 +969,12 @@ void CentralProcessingUnit::instruction_SRL(uint8_t* data) {
         val >>= 1;
         mmu->Write(addr, val);
         isZero = (val == 0);
-        isHalfCarry = isSubtract = 0;
+        isHalfCarry = isSubtract = false;
         return;
     } else if (data[0] == 0x3f)
         reg = &(accumulator);
 
-    isHalfCarry = isSubtract = 0;
+    isHalfCarry = isSubtract = false;
     uint8_t val = (*reg) >> 1;
     isZero = (val == 0);
     isCarry = (*reg) & 1;
@@ -1016,6 +1014,7 @@ void CentralProcessingUnit::instruction_Swap(uint8_t* data) {
         val |= (data << 4);
         mmu->Write(addr, val);
         isZero = (val == 0);
+        isSubtract = isCarry = isHalfCarry = false;
         return;
     } else if (data[0] == 0x37)
         reg = &(accumulator);
@@ -1024,6 +1023,7 @@ void CentralProcessingUnit::instruction_Swap(uint8_t* data) {
     val |= ((*reg) << 4);
     *reg = val;
     isZero = (val == 0);
+    isSubtract = isCarry = isHalfCarry = false;
 }
 
 void CentralProcessingUnit::instruction_Reset(uint8_t* data) {
@@ -1159,8 +1159,8 @@ void CentralProcessingUnit::instruction_CheckBit(uint8_t* data) {
         val = accumulator;
 
     isZero = (val & (1 << dbit)) == 0;
-    isHalfCarry = 1;
-    isSubtract = 0;
+    isHalfCarry = true;
+    isSubtract = false;
 }
 
 void CentralProcessingUnit::instruction_RollLeftA(uint8_t* data) {
@@ -1190,8 +1190,7 @@ void CentralProcessingUnit::instruction_RollLeft(uint8_t* data) {
         isCarry = (val >> 7) & 1;
         val = val << 1 | temp;
         isZero = (val == 0);
-        isHalfCarry = false;
-        isSubtract = false;
+        isHalfCarry = isSubtract = false;
 
         mmu->Write(addr, val);
         return;
@@ -1202,8 +1201,7 @@ void CentralProcessingUnit::instruction_RollLeft(uint8_t* data) {
     isCarry = check_bit((*reg), 7);
     *reg = (*reg) << 1 | temp;
     isZero = (*reg) == 0;
-    isHalfCarry = false;
-    isSubtract = false;
+    isHalfCarry = isSubtract = false;
 }
 
 void CentralProcessingUnit::instruction_RollRightA(uint8_t* data) {
@@ -1233,8 +1231,7 @@ void CentralProcessingUnit::instruction_RollRight(uint8_t* data) {
         isCarry = check_bit(val, 0);
         val = val >> 1 | (temp << 7);
         isZero = (val == 0);
-        isHalfCarry = false;
-        isSubtract = false;
+        isHalfCarry = isSubtract = false;
 
         mmu->Write(addr, val);
         return;
@@ -1245,8 +1242,7 @@ void CentralProcessingUnit::instruction_RollRight(uint8_t* data) {
     isCarry = check_bit((*reg), 0);
     *reg = (*reg) >> 1 | (temp << 7);
     isZero = (*reg) == 0;
-    isHalfCarry = false;
-    isSubtract = false;
+    isHalfCarry = isSubtract = false;
 }
 
 void CentralProcessingUnit::instruction_RollLeftCarryA(uint8_t* data) {
@@ -1278,8 +1274,7 @@ void CentralProcessingUnit::instruction_RollLeftCarry(uint8_t* data) {
 
         isCarry = carry_flag;
         isZero = val == 0;
-        isHalfCarry = false;
-        isSubtract = false;
+        isHalfCarry = isSubtract = false;
         mmu->Write(addr, val);
         return;
     } else if (data[0] == 0x07)
@@ -1291,8 +1286,7 @@ void CentralProcessingUnit::instruction_RollLeftCarry(uint8_t* data) {
 
     isCarry = carry_flag;
     isZero = (*reg) == 0;
-    isHalfCarry = false;
-    isSubtract = false;
+    isHalfCarry = isSubtract = false;
 }
 
 void CentralProcessingUnit::instruction_RollRightCarryA(uint8_t* data) {
@@ -1324,8 +1318,7 @@ void CentralProcessingUnit::instruction_RollRightCarry(uint8_t* data) {
 
         isCarry = carry_flag;
         isZero = (val == 0);
-        isHalfCarry = false;
-        isSubtract = false;
+        isHalfCarry = isSubtract = false;
         mmu->Write(addr, val);
         return;
     } else if (data[0] == 0x0f)
@@ -1337,8 +1330,7 @@ void CentralProcessingUnit::instruction_RollRightCarry(uint8_t* data) {
 
     isCarry = carry_flag;
     isZero = (*reg) == 0;
-    isHalfCarry = false;
-    isSubtract = false;
+    isHalfCarry = isSubtract = false;
 }
 
 void CentralProcessingUnit::instruction_DAA(uint8_t* data) {
@@ -1356,9 +1348,8 @@ void CentralProcessingUnit::instruction_DAA(uint8_t* data) {
     else
         reg = static_cast<uint8_t>(reg + correction);
 
-    if (((correction << 2) & 0x100) != 0)
-        isCarry = true;
 
+    isCarry = (((correction << 2) & 0x100) != 0);
     isHalfCarry = false;
     isZero = (reg == 0);
     accumulator = static_cast<uint8_t>(reg);
@@ -1427,8 +1418,7 @@ void CentralProcessingUnit::instruction_SLA(uint8_t* data) {
         uint8_t carry_bit = check_bit(d, 7);
         uint8_t result = static_cast<uint8_t>(d << 1);
         isZero = (result == 0);
-        isSubtract = false;
-        isHalfCarry = false;
+        isSubtract = isHalfCarry = false;
         isCarry = carry_bit;
         mmu->Write(addr, result);
         return;
@@ -1438,8 +1428,7 @@ void CentralProcessingUnit::instruction_SLA(uint8_t* data) {
     uint8_t carry_bit = check_bit(*reg, 7);
     uint8_t result = static_cast<uint8_t>(*reg << 1);
     isZero = (result == 0);
-    isSubtract = false;
-    isHalfCarry = false;
+    isSubtract = isHalfCarry = false;
     isCarry = carry_bit;
     *reg = result;
 }
@@ -1469,8 +1458,7 @@ void CentralProcessingUnit::instruction_SRA(uint8_t* data) {
         else
             result &= ~(1 << 7);
         isZero = (result == 0);
-        isSubtract = false;
-        isHalfCarry = false;
+        isSubtract = isHalfCarry = false;
         isCarry = carry_bit;
         mmu->Write(addr, result);
         return;
@@ -1486,8 +1474,7 @@ void CentralProcessingUnit::instruction_SRA(uint8_t* data) {
         result &= ~(1 << 7);
 
     isZero = (result == 0);
-    isSubtract = false;
-    isHalfCarry = false;
+    isSubtract = isHalfCarry = false;
     isCarry = carry_bit;
     *reg = result;
 }
